@@ -218,6 +218,17 @@ __marimo__/
 .streamlit/secrets.toml
 
 #Custom
+
 AGENTS.md
 docs/
 .cmd/
+
+ns3-base/ns-3.48/cmake-cache/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
