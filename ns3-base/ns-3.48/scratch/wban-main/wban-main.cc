@@ -6,7 +6,6 @@
 #include "ns3/basic-energy-source.h"
 #include "ns3/basic-energy-source-helper.h"
 #include "ns3/energy-source-container.h"
-#include "ns3/energy-source-container.h"
 #include "ns3/packet-socket-helper.h"
 
 // WBAN Specific Modules
@@ -30,10 +29,10 @@ std::map<uint32_t, Ptr<WbanNetDevice>> g_wbanDevices;
 std::map<uint32_t, Ptr<WifiNetDevice>> g_backhaulDevices;   
 std::map<uint32_t, Ptr<ns3::energy::BasicEnergySource>> g_nodeBatteries; 
 
-int main(int argc, char *argv[])
+int main()
 {
-    CommandLine cmd;
-    cmd.Parse(argc, argv);
+    // Make simulation duration configurable via command line (Default: 3600 seconds / 1 hour)
+    double simDuration = 3600.0; 
 
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
@@ -56,7 +55,6 @@ int main(int argc, char *argv[])
     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
     mobility.Install(allNodes);
     
-    // FIX: Install raw MAC-layer socket capabilities on all nodes
     PacketSocketHelper packetSocket;
     packetSocket.Install(allNodes);
 
@@ -69,7 +67,6 @@ int main(int argc, char *argv[])
     
     for (const auto& config : WBAN_HETEROGENEOUS_NETWORK)
     {
-        // Skip LPU (Node 1) as it only uses Wi-Fi
         if (config.nodeId == 1) continue; 
 
         NetDeviceContainer dev = wbanHelper.Install(allNodes.Get(config.nodeId));
@@ -94,8 +91,8 @@ int main(int argc, char *argv[])
     wifiMac.SetType("ns3::AdhocWifiMac");
 
     NetDeviceContainer wifiDevices;
-    wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(0))); // Coordinator Wi-Fi
-    wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(1))); // LPU Wi-Fi
+    wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(0))); 
+    wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(1))); 
 
     g_backhaulDevices[0] = DynamicCast<WifiNetDevice>(wifiDevices.Get(0));
     g_backhaulDevices[1] = DynamicCast<WifiNetDevice>(wifiDevices.Get(1));
@@ -103,7 +100,7 @@ int main(int argc, char *argv[])
     NS_LOG_INFO("Phase 3 Complete: Inter-BAN Wi-Fi Backhaul established between Coordinator and LPU.");
 
     // ========================================================================
-    // PHASE 4: ENERGY MODEL ATTACHMENT (Virtual Batteries)
+    // PHASE 4: ENERGY MODEL ATTACHMENT 
     // ========================================================================
     BasicEnergySourceHelper basicSourceHelper;
     
@@ -120,9 +117,8 @@ int main(int argc, char *argv[])
     NS_LOG_INFO("Phase 4 Complete: Virtual batteries successfully installed.");
 
     // ========================================================================
-    // PHASE 5: APPLICATION LAYER INTEGRATION (The Traffic Generators)
+    // PHASE 5: APPLICATION LAYER INTEGRATION 
     // ========================================================================
-    // Grab the generic Address of the Coordinator's WBAN device
     Address coordAddress = g_wbanDevices[0]->GetAddress();
 
     for (const auto& config : WBAN_HETEROGENEOUS_NETWORK)
@@ -131,32 +127,32 @@ int main(int argc, char *argv[])
             continue; 
         }
 
-        // FIX: Replaced the placeholder comments with the actual variables
         std::unique_ptr<WbanTrafficGenerator> mathEngine = std::make_unique<WbanTrafficGenerator>(
             config.nodeId, 
             config.applicationIntervalSec, 
             config.maxPayloadSize, 
-            config.activeProbability,
+            config.payloadJitter,  
+            config.intervalJitter, 
             config.trafficRatios
         );
 
         Ptr<WbanSensorApp> sensorApp = CreateObject<WbanSensorApp>();
-        sensorApp->Setup(coordAddress, std::move(mathEngine));
+        sensorApp->Setup(coordAddress, std::move(mathEngine), config.maxPayloadSize); 
 
         Ptr<Node> node = allNodes.Get(config.nodeId);
         node->AddApplication(sensorApp);
 
         sensorApp->SetStartTime(Seconds(1.0));
-        sensorApp->SetStopTime(Seconds(20.0));
+        sensorApp->SetStopTime(Seconds(simDuration));
     }
     NS_LOG_INFO("Phase 5 Complete: Stochastic Sensor Applications deployed to Nodes 2-11.");
 
     // ========================================================================
     // PHASE 6: EXECUTION
     // ========================================================================
-    NS_LOG_INFO("Booting Simulation Engine...");
+    NS_LOG_INFO("Booting Simulation Engine for " << simDuration << " seconds...");
     
-    Simulator::Stop(Seconds(21.0)); 
+    Simulator::Stop(Seconds(simDuration + 1.0)); 
     Simulator::Run();
     Simulator::Destroy();
 

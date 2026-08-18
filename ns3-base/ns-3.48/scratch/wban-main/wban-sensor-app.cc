@@ -1,24 +1,15 @@
 #include "wban-sensor-app.h"
 #include "ns3/log.h"
 #include "ns3/simulator.h"
-#include "ns3/packet-socket-factory.h" 
-#include "ns3/packet-socket-address.h" 
-#include "ns3/double.h" 
+#include "ns3/packet-socket-factory.h"
+#include "ns3/packet-socket-address.h"
+#include "ns3/double.h"
 
 namespace ns3 {
 namespace wban {
 
 NS_LOG_COMPONENT_DEFINE("WbanSensorApp");
 
-// ----------------------------------------------------------------------------
-// USER CONFIGURATION: Set the discrete time step limit (k) here.
-// The simulation event chain will permanently halt after this many hardware ticks.
-// ----------------------------------------------------------------------------
-const uint32_t MAX_SIMULATION_TICKS = 1000; 
-
-// ============================================================================
-// NS-3 TYPE ID REGISTRATION
-// ============================================================================
 TypeId WbanSensorApp::GetTypeId(void)
 {
     static TypeId tid = TypeId("ns3::wban::WbanSensorApp")
@@ -31,13 +22,12 @@ TypeId WbanSensorApp::GetTypeId(void)
     return tid;
 }
 
-// ============================================================================
-// CONSTRUCTOR & DESTRUCTOR
-// ============================================================================
 WbanSensorApp::WbanSensorApp() 
     : m_socket(nullptr), 
-      m_ticksCompleted(0) 
+      m_currentBufferSize(0),
+      m_maxPayloadSize(0)
 {
+    // Initialize random variable for initial application start staggering
     m_staggerVar = CreateObject<UniformRandomVariable>();
     m_staggerVar->SetAttribute("Min", DoubleValue(0.000));
     m_staggerVar->SetAttribute("Max", DoubleValue(0.050));
@@ -48,19 +38,13 @@ WbanSensorApp::~WbanSensorApp()
     m_socket = nullptr; 
 }
 
-// ============================================================================
-// SETUP
-// ============================================================================
-// FIX: Correctly using the generic 'Address' instead of 'Mac48Address'
-void WbanSensorApp::Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator)
+void WbanSensorApp::Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, uint32_t maxPayloadSize)
 {
     m_peerAddress = destAddr;
-    m_generator = std::move(generator); 
+    m_generator = std::move(generator);
+    m_maxPayloadSize = maxPayloadSize;
 }
 
-// ============================================================================
-// LIFECYCLE: START APPLICATION
-// ============================================================================
 void WbanSensorApp::StartApplication(void)
 {
     if (!m_socket) {
@@ -72,19 +56,17 @@ void WbanSensorApp::StartApplication(void)
         m_socket->Bind(local);
 
         PacketSocketAddress remote;
-        remote.SetPhysicalAddress(m_peerAddress); // Natively accepts generic Address
+        remote.SetPhysicalAddress(m_peerAddress);
         remote.SetSingleDevice(GetNode()->GetDevice(0)->GetIfIndex());
         m_socket->Connect(remote);
     }
 
+    // Stagger initial sensor startup to avoid network congestion bursts
     double startOffset = m_staggerVar->GetValue();
-    NS_LOG_INFO("Node " << GetNode()->GetId() << " scheduled first tick at T=" << startOffset << "s");
-    m_sendEvent = Simulator::Schedule(Seconds(startOffset), &WbanSensorApp::SendPacket, this);
+    NS_LOG_INFO("Node " << GetNode()->GetId() << " scheduled initial sensor sampling at T=" << startOffset << "s");
+    m_sendEvent = Simulator::Schedule(Seconds(startOffset), &WbanSensorApp::ExecuteSamplingCycle, this);
 }
 
-// ============================================================================
-// LIFECYCLE: STOP APPLICATION
-// ============================================================================
 void WbanSensorApp::StopApplication(void)
 {
     if (m_sendEvent.IsPending()) {
@@ -95,49 +77,81 @@ void WbanSensorApp::StopApplication(void)
     }
 }
 
-// ============================================================================
-// CORE LOGIC: SEND PACKET
-// ============================================================================
-void WbanSensorApp::SendPacket()
+std::string WbanSensorApp::GetTrafficClassName(TrafficClass c) const
 {
-    m_ticksCompleted++;
-    if (m_ticksCompleted > MAX_SIMULATION_TICKS) {
-        NS_LOG_INFO("Node " << GetNode()->GetId() << " reached maximum ticks (" 
-                    << MAX_SIMULATION_TICKS << "). Halting generation.");
-        return; 
+    switch (c) {
+        case CLASS_CP: return "CP (Critical Packet)";
+        case CLASS_RP: return "RP (Reliability Packet)";
+        case CLASS_DP: return "DP (Delay Packet)";
+        case CLASS_OP: return "OP (Ordinary Packet)";
+        default:       return "UNKNOWN";
+    }
+}
+
+void WbanSensorApp::ExecuteSamplingCycle()
+{
+    // 1. Independently sample the traffic generator on every tick to preserve configuration ratios
+    TrafficClass sampledType = m_generator->GenerateNextPacketType();
+    uint32_t sampledSize = m_generator->GetPayloadSize();
+
+    // 2. Push the discrete sample into the local buffer vector and accumulate size
+    m_sampleBuffer.push_back({sampledType, sampledSize});
+    m_currentBufferSize += sampledSize;
+
+    // 3. Log the generation event for statistical tracking and verification
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node " 
+                << GetNode()->GetId() << " | Sample Generated -> Class: " << GetTrafficClassName(sampledType) 
+                << " | Size: " << sampledSize << "B | Buffer Total: " << m_currentBufferSize << "B");
+
+    // 4. Transmission threshold condition: Flush buffer down to MAC layer when static MTU/max size is reached 
+    if (m_currentBufferSize >= m_maxPayloadSize) 
+    {
+        FlushAndTransmitBuffer();
     }
 
-    TrafficClass type = m_generator->GenerateNextPacketType();
+    // 5. Chain the next sampling event to maintain continuous sensor operation
+    ScheduleNextSamplingCycle();
+}
 
-    if (type == CLASS_NONE) {
-        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node " 
-                    << GetNode()->GetId() << " | Tick " << m_ticksCompleted << " | IDLE");
-    } 
-    else {
-        uint32_t payloadSize = m_generator->GetPayloadSize();
-        Ptr<Packet> packet = Create<Packet>(payloadSize);
+void WbanSensorApp::FlushAndTransmitBuffer()
+{
+    if (m_sampleBuffer.empty()) {
+        return;
+    }
 
-        int bytesSent = m_socket->Send(packet);
+    // Aggregate total payload size and determine batch priority class 
+    // (selecting the highest priority class present in the buffer window)
+    TrafficClass aggregateClass = CLASS_OP;
+    uint32_t totalPayload = 0;
 
-        if (bytesSent >= 0) {
-            NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node " 
-                        << GetNode()->GetId() << " | Tick " << m_ticksCompleted 
-                        << " | SENT " << payloadSize << "B | Priority: " << type);
-            
-            m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(type));
+    for (const auto& sample : m_sampleBuffer) {
+        totalPayload += sample.size;
+        if (sample.type < aggregateClass) {
+            aggregateClass = sample.type;
         }
     }
 
-    ScheduleNextPacket();
+    // Create packet with accumulated payload and transmit via socket
+    Ptr<Packet> packet = Create<Packet>(totalPayload);
+    int bytesSent = m_socket->Send(packet);
+
+    if (bytesSent >= 0) {
+        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] >>> TRANSMIT BATCH: Node " 
+                    << GetNode()->GetId() << " sent " << totalPayload 
+                    << "B aggregated payload down to MAC layer | Assigned Priority Class: " << GetTrafficClassName(aggregateClass));
+        
+        m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
+    }
+    
+    // Reset buffer state post-transmission
+    m_sampleBuffer.clear();
+    m_currentBufferSize = 0;
 }
 
-// ============================================================================
-// CORE LOGIC: SCHEDULE NEXT PACKET
-// ============================================================================
-void WbanSensorApp::ScheduleNextPacket()
+void WbanSensorApp::ScheduleNextSamplingCycle()
 {
-    double intervalSec = m_generator->GetInterval();
-    m_sendEvent = Simulator::Schedule(Seconds(intervalSec), &WbanSensorApp::SendPacket, this);
+    double interval = m_generator ? m_generator->GetInterval() : 1.0;
+    m_sendEvent = Simulator::Schedule(Seconds(interval), &WbanSensorApp::ExecuteSamplingCycle, this);
 }
 
 } // namespace wban
