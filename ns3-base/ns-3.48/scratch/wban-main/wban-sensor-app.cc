@@ -4,6 +4,8 @@
 #include "ns3/packet-socket-factory.h"
 #include "ns3/packet-socket-address.h"
 #include "ns3/double.h"
+#include "ns3/socket.h"
+#include "ns3/lr-wpan-mac.h"
 
 namespace ns3 {
 namespace wban {
@@ -25,9 +27,10 @@ TypeId WbanSensorApp::GetTypeId(void)
 WbanSensorApp::WbanSensorApp() 
     : m_socket(nullptr), 
       m_currentBufferSize(0),
-      m_maxPayloadSize(0)
+      m_maxPayloadSize(0),
+      m_macSyncLost(true),
+      m_allocatedSlots(0)
 {
-    // Initialize random variable for initial application start staggering
     m_staggerVar = CreateObject<UniformRandomVariable>();
     m_staggerVar->SetAttribute("Min", DoubleValue(0.000));
     m_staggerVar->SetAttribute("Max", DoubleValue(0.050));
@@ -38,11 +41,22 @@ WbanSensorApp::~WbanSensorApp()
     m_socket = nullptr; 
 }
 
-void WbanSensorApp::Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, uint32_t maxPayloadSize)
+void WbanSensorApp::Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, 
+                          uint32_t maxPayloadSize, Ptr<ns3::lrwpan::LrWpanMac> mac, 
+                          uint8_t channel, uint8_t requestedGtsSlots)
 {
     m_peerAddress = destAddr;
     m_generator = std::move(generator);
     m_maxPayloadSize = maxPayloadSize;
+    m_mac = mac;           
+    m_channel = channel;   
+    m_allocatedSlots = requestedGtsSlots;
+}
+
+int64_t WbanSensorApp::AssignStreams(int64_t stream)
+{
+    m_staggerVar->SetStream(stream);
+    return 1; 
 }
 
 void WbanSensorApp::StartApplication(void)
@@ -61,10 +75,12 @@ void WbanSensorApp::StartApplication(void)
         m_socket->Connect(remote);
     }
 
-    // Stagger initial sensor startup to avoid network congestion bursts
-    double startOffset = m_staggerVar->GetValue();
-    NS_LOG_INFO("Node " << GetNode()->GetId() << " scheduled initial sensor sampling at T=" << startOffset << "s");
-    m_sendEvent = Simulator::Schedule(Seconds(startOffset), &WbanSensorApp::ExecuteSamplingCycle, this);
+    m_mac->SetRxOnWhenIdle(false);
+
+    ns3::lrwpan::MlmeSyncRequestParams syncParams;
+    syncParams.m_logCh = m_channel;
+    syncParams.m_trackBcn = true;
+    m_mac->MlmeSyncRequest(syncParams);
 }
 
 void WbanSensorApp::StopApplication(void)
@@ -77,83 +93,96 @@ void WbanSensorApp::StopApplication(void)
     }
 }
 
-std::string WbanSensorApp::GetTrafficClassName(TrafficClass c) const
+std::string WbanSensorApp::GetQosPriorityName(QosPriority c) const
 {
     switch (c) {
-        case CLASS_CP: return "CP (Critical Packet)";
-        case CLASS_RP: return "RP (Reliability Packet)";
-        case CLASS_DP: return "DP (Delay Packet)";
-        case CLASS_OP: return "OP (Ordinary Packet)";
-        default:       return "UNKNOWN";
+        case QOS_CP: return "CP";
+        case QOS_RP: return "RP";
+        case QOS_DP: return "DP";
+        case QOS_OP: return "OP";
+        default:     return "UNKNOWN";
     }
 }
 
 void WbanSensorApp::ExecuteSamplingCycle()
 {
-    // 1. Independently sample the traffic generator on every tick to preserve configuration ratios
-    TrafficClass sampledType = m_generator->GenerateNextPacketType();
+    if (m_macSyncLost) return; 
+
+    QosPriority sampledType = m_generator->GenerateNextPacketType();
     uint32_t sampledSize = m_generator->GetPayloadSize();
 
-    // 2. Push the discrete sample into the local buffer vector and accumulate size
     m_sampleBuffer.push_back({sampledType, sampledSize});
     m_currentBufferSize += sampledSize;
 
-    // 3. Log the generation event for statistical tracking and verification
-    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node " 
-                << GetNode()->GetId() << " | Sample Generated -> Class: " << GetTrafficClassName(sampledType) 
-                << " | Size: " << sampledSize << "B | Buffer Total: " << m_currentBufferSize << "B");
-
-    // 4. Transmission threshold condition: Flush buffer down to MAC layer when static MTU/max size is reached 
-    if (m_currentBufferSize >= m_maxPayloadSize) 
+    if (sampledType == QOS_CP || sampledType == QOS_RP || m_currentBufferSize >= m_maxPayloadSize) 
     {
         FlushAndTransmitBuffer();
     }
-
-    // 5. Chain the next sampling event to maintain continuous sensor operation
-    ScheduleNextSamplingCycle();
 }
 
 void WbanSensorApp::FlushAndTransmitBuffer()
 {
-    if (m_sampleBuffer.empty()) {
-        return;
-    }
+    if (m_sampleBuffer.empty()) return;
 
-    // Aggregate total payload size and determine batch priority class 
-    // (selecting the highest priority class present in the buffer window)
-    TrafficClass aggregateClass = CLASS_OP;
+    QosPriority aggregateClass = QOS_OP;
     uint32_t totalPayload = 0;
 
     for (const auto& sample : m_sampleBuffer) {
         totalPayload += sample.size;
-        if (sample.type < aggregateClass) {
-            aggregateClass = sample.type;
-        }
+        if (sample.type < aggregateClass) aggregateClass = sample.type;
     }
 
-    // Create packet with accumulated payload and transmit via socket
     Ptr<Packet> packet = Create<Packet>(totalPayload);
-    int bytesSent = m_socket->Send(packet);
+    SocketPriorityTag priorityTag;
+    priorityTag.SetPriority(static_cast<uint32_t>(aggregateClass));
+    packet->AddPacketTag(priorityTag);
 
-    if (bytesSent >= 0) {
-        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] >>> TRANSMIT BATCH: Node " 
-                    << GetNode()->GetId() << " sent " << totalPayload 
-                    << "B aggregated payload down to MAC layer | Assigned Priority Class: " << GetTrafficClassName(aggregateClass));
-        
+    if (m_socket->Send(packet) >= 0) {
         m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
     }
     
-    // Reset buffer state post-transmission
     m_sampleBuffer.clear();
     m_currentBufferSize = 0;
 }
 
-void WbanSensorApp::ScheduleNextSamplingCycle()
+// ============================================================================
+// MLME MAC CALLBACK IMPLEMENTATIONS
+// ============================================================================
+
+void WbanSensorApp::OnMacStartConfirm(ns3::lrwpan::MlmeStartConfirmParams params)
 {
-    double interval = m_generator ? m_generator->GetInterval() : 1.0;
-    m_sendEvent = Simulator::Schedule(Seconds(interval), &WbanSensorApp::ExecuteSamplingCycle, this);
+    // Silenced to prevent terminal spam
+}
+
+void WbanSensorApp::OnMacBeaconNotify(ns3::lrwpan::MlmeBeaconNotifyIndicationParams params)
+{
+    if (m_macSyncLost) m_macSyncLost = false;
+
+    // --- APPLICATION-LAYER TDMA SCHEDULING ---
+    // The beacon marks T=0. 
+    // We statically assign slots based on Node ID (Nodes 2 through 11).
+    // An SO=3 slot is ~7.68 milliseconds.
+    
+    uint32_t nodeId = GetNode()->GetId();
+    uint32_t slotMultiplier = (nodeId >= 2) ? (nodeId - 1) : 1; 
+    
+    double offsetSeconds = slotMultiplier * 0.00768; 
+
+    // Schedule the packet generation for the exact microsecond this node's TDMA slot opens
+    Simulator::Schedule(Seconds(offsetSeconds), &WbanSensorApp::ExecuteSamplingCycle, this);
+}
+
+void WbanSensorApp::OnMacSyncLoss(ns3::lrwpan::MlmeSyncLossIndicationParams params)
+{
+    m_macSyncLost = true;
+    m_sampleBuffer.clear();
+    m_currentBufferSize = 0;
+
+    ns3::lrwpan::MlmeSyncRequestParams syncParams;
+    syncParams.m_logCh = m_channel;
+    syncParams.m_trackBcn = true;
+    Simulator::Schedule(Seconds(0.5), &ns3::lrwpan::LrWpanMac::MlmeSyncRequest, m_mac, syncParams);
 }
 
 } // namespace wban
 } // namespace ns3
-

@@ -10,6 +10,10 @@
 #include "ns3/random-variable-stream.h"
 #include "ns3/traced-callback.h"
 #include "wban-traffic-generator.h"
+#include "wban-config.h" 
+#include "ns3/lr-wpan-mac-base.h" 
+#include "ns3/lr-wpan-mac.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,9 +21,8 @@
 namespace ns3 {
 namespace wban {
 
-// Structure to store individual sample attributes before batch transmission
 struct SensorSample {
-    TrafficClass type;
+    QosPriority type;
     uint32_t size;
 };
 
@@ -30,8 +33,16 @@ public:
     WbanSensorApp();
     virtual ~WbanSensorApp();
 
-    // Setup the application with destination address, traffic generator engine, and MTU threshold
-    void Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, uint32_t maxPayloadSize); 
+    void Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, 
+               uint32_t maxPayloadSize, Ptr<ns3::lrwpan::LrWpanMac> mac, 
+               uint8_t channel, uint8_t requestedGtsSlots); 
+               
+    int64_t AssignStreams(int64_t stream);
+
+    // --- MLME MAC Layer Callback Handlers ---
+    void OnMacStartConfirm(ns3::lrwpan::MlmeStartConfirmParams params);
+    void OnMacBeaconNotify(ns3::lrwpan::MlmeBeaconNotifyIndicationParams params);
+    void OnMacSyncLoss(ns3::lrwpan::MlmeSyncLossIndicationParams params);
 
 protected:
     virtual void StartApplication(void) override;
@@ -40,26 +51,32 @@ protected:
 private:
     void ExecuteSamplingCycle();
     void FlushAndTransmitBuffer();
-    void ScheduleNextSamplingCycle();
-    std::string GetTrafficClassName(TrafficClass c) const;
+    
+    std::string GetQosPriorityName(QosPriority c) const; 
 
     Ptr<Socket> m_socket;
     Address m_peerAddress;
     std::unique_ptr<WbanTrafficGenerator> m_generator;
     EventId m_sendEvent;
     
-    // Decoupled buffering components to preserve generation ratios
     std::vector<SensorSample> m_sampleBuffer;
     uint32_t m_currentBufferSize;
     uint32_t m_maxPayloadSize; 
     
     Ptr<UniformRandomVariable> m_staggerVar;
-
     TracedCallback<Ptr<const Packet>, uint32_t, uint32_t> m_txTrace;
+
+    bool m_macSyncLost; 
+    Ptr<ns3::lrwpan::LrWpanMac> m_mac;
+    uint8_t m_channel;
+    
+    // TDMA Scheduling Variables
+    uint8_t m_allocatedSlots; 
 };
 
 } // namespace wban
 } // namespace ns3
 
 #endif // WBAN_SENSOR_APP_H
+
 
