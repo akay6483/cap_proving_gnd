@@ -103,8 +103,13 @@ int main(int argc, char *argv[])
         Ptr<LrWpanNetDevice> lrwpanDev = DynamicCast<LrWpanNetDevice>(dev.Get(0));
         
         Ptr<LrWpanMac> mac = lrwpanDev->GetMac();
+
+        mac->SetAttribute("macMinBE", UintegerValue(0)); 
+        mac->SetAttribute("macMaxBE", UintegerValue(0)); 
+        mac->SetAttribute("macMaxCSMABackoffs", UintegerValue(0)); 
+        mac->SetPanId(unifiedPanId);
         mac->SetPanId(unifiedPanId); 
-        mac->SetShortAddress(Mac16Address(config.nodeId)); 
+        mac->SetShortAddress(Mac16Address(config.nodeId));
         
         if (config.isCoordinator) 
         {

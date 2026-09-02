@@ -49,15 +49,18 @@ protected:
     virtual void StopApplication(void) override;
 
 private:
-    void ExecuteSamplingCycle();
+    void GenerateData();
+    void TransmitSlot();
     void FlushAndTransmitBuffer();
     
-    std::string GetQosPriorityName(QosPriority c) const; 
+    std::string GetQosPriorityName(QosPriority c) const;
+    void ExecuteSamplingCycle();
 
     Ptr<Socket> m_socket;
     Address m_peerAddress;
     std::unique_ptr<WbanTrafficGenerator> m_generator;
     EventId m_sendEvent;
+    EventId m_generateEvent;
     
     std::vector<SensorSample> m_sampleBuffer;
     uint32_t m_currentBufferSize;

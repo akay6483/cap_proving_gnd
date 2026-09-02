@@ -72,6 +72,7 @@ void WbanSensorApp::StartApplication(void)
         PacketSocketAddress remote;
         remote.SetPhysicalAddress(m_peerAddress);
         remote.SetSingleDevice(GetNode()->GetDevice(0)->GetIfIndex());
+        remote.SetProtocol(0);
         m_socket->Connect(remote);
     }
 
@@ -81,6 +82,9 @@ void WbanSensorApp::StartApplication(void)
     syncParams.m_logCh = m_channel;
     syncParams.m_trackBcn = true;
     m_mac->MlmeSyncRequest(syncParams);
+
+    double firstInterval = m_generator->GetInterval();
+    m_generateEvent = Simulator::Schedule(Seconds(firstInterval), &WbanSensorApp::GenerateData, this);
 }
 
 void WbanSensorApp::StopApplication(void)
@@ -104,6 +108,22 @@ std::string WbanSensorApp::GetQosPriorityName(QosPriority c) const
     }
 }
 
+void WbanSensorApp::GenerateData()
+{
+    // Ask the math engine for the priority (CP, RP, DP, OP) and byte size of the next packet
+    QosPriority sampledType = m_generator->GenerateNextPacketType();
+    uint32_t sampledSize = m_generator->GetPayloadSize();
+
+    // Store the sample in the buffer instead of sending it immediately
+    m_sampleBuffer.push_back({sampledType, sampledSize});
+    m_currentBufferSize += sampledSize;
+
+    // Schedule the next sensor reading based on the node's customized jitter interval
+    double nextInterval = m_generator->GetInterval();
+    m_generateEvent = Simulator::Schedule(Seconds(nextInterval), &WbanSensorApp::GenerateData, this);
+}
+
+
 void WbanSensorApp::ExecuteSamplingCycle()
 {
     if (m_macSyncLost) return; 
@@ -120,27 +140,41 @@ void WbanSensorApp::ExecuteSamplingCycle()
     }
 }
 
+void WbanSensorApp::TransmitSlot()
+{
+    if (m_macSyncLost) return; 
+    
+    // The TDMA slot is open. Push whatever data has accumulated to the MAC.
+    FlushAndTransmitBuffer();
+}
+
 void WbanSensorApp::FlushAndTransmitBuffer()
 {
-    if (m_sampleBuffer.empty()) return;
+    if (m_sampleBuffer.empty()) return; // Nothing to send, go back to sleep
 
     QosPriority aggregateClass = QOS_OP;
     uint32_t totalPayload = 0;
 
+    // Combine all tiny sensor samples into one bulk payload for efficiency
+    // The overall packet inherits the priority of the most critical sample inside it
     for (const auto& sample : m_sampleBuffer) {
         totalPayload += sample.size;
         if (sample.type < aggregateClass) aggregateClass = sample.type;
     }
 
     Ptr<Packet> packet = Create<Packet>(totalPayload);
+    
+    // Create the tag required by your TSN architecture
     SocketPriorityTag priorityTag;
     priorityTag.SetPriority(static_cast<uint32_t>(aggregateClass));
     packet->AddPacketTag(priorityTag);
 
+    // Send down to the LrWpan MAC layer
     if (m_socket->Send(packet) >= 0) {
         m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
     }
     
+    // Empty the buffer for the next cycle
     m_sampleBuffer.clear();
     m_currentBufferSize = 0;
 }
@@ -158,18 +192,27 @@ void WbanSensorApp::OnMacBeaconNotify(ns3::lrwpan::MlmeBeaconNotifyIndicationPar
 {
     if (m_macSyncLost) m_macSyncLost = false;
 
-    // --- APPLICATION-LAYER TDMA SCHEDULING ---
-    // The beacon marks T=0. 
-    // We statically assign slots based on Node ID (Nodes 2 through 11).
-    // An SO=3 slot is ~7.68 milliseconds.
-    
-    uint32_t nodeId = GetNode()->GetId();
-    uint32_t slotMultiplier = (nodeId >= 2) ? (nodeId - 1) : 1; 
-    
-    double offsetSeconds = slotMultiplier * 0.00768; 
+    uint32_t myNodeId = GetNode()->GetId();
+    uint32_t cumulativeSlotsBeforeMe = 0;
 
-    // Schedule the packet generation for the exact microsecond this node's TDMA slot opens
-    Simulator::Schedule(Seconds(offsetSeconds), &WbanSensorApp::ExecuteSamplingCycle, this);
+    // Loop through the global network config to find out how many slots 
+    // are reserved by nodes that transmit before this node.
+    for (const auto& config : WBAN_NETWORK) {
+        // Ignore the Coordinator (0) and LPU (1)
+        if (config.isCoordinator || config.nodeId == 1) continue;
+        
+        // If the node ID is lower than mine, add its requested slots to my wait time
+        if (config.nodeId < myNodeId) {
+            cumulativeSlotsBeforeMe += config.requestedGtsSlots;
+        }
+    }
+
+    // Calculate exact transmission offset based on accumulated slots
+    // 1 SO=3 slot = 7.68 milliseconds
+    double offsetSeconds = cumulativeSlotsBeforeMe * 0.00768; 
+
+    // Schedule TransmitSlot to open at this precise microsecond
+    m_sendEvent = Simulator::Schedule(Seconds(offsetSeconds), &WbanSensorApp::TransmitSlot, this);
 }
 
 void WbanSensorApp::OnMacSyncLoss(ns3::lrwpan::MlmeSyncLossIndicationParams params)
