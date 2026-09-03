@@ -11,6 +11,7 @@
 #include "ns3/traced-callback.h"
 #include "wban-traffic-generator.h"
 #include "wban-config.h" 
+#include "wban-central-scheduler.h" 
 #include "ns3/lr-wpan-mac-base.h" 
 #include "ns3/lr-wpan-mac.h"
 
@@ -33,13 +34,13 @@ public:
     WbanSensorApp();
     virtual ~WbanSensorApp();
 
+    // FIXED: Changed QosPriority to SensorHierarchy
     void Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, 
                uint32_t maxPayloadSize, Ptr<ns3::lrwpan::LrWpanMac> mac, 
-               uint8_t channel, uint8_t requestedGtsSlots); 
+               uint8_t channel, uint8_t requestedGtsSlots, SensorHierarchy baseHierarchy); 
                
     int64_t AssignStreams(int64_t stream);
 
-    // --- MLME MAC Layer Callback Handlers ---
     void OnMacStartConfirm(ns3::lrwpan::MlmeStartConfirmParams params);
     void OnMacBeaconNotify(ns3::lrwpan::MlmeBeaconNotifyIndicationParams params);
     void OnMacSyncLoss(ns3::lrwpan::MlmeSyncLossIndicationParams params);
@@ -54,11 +55,11 @@ private:
     void FlushAndTransmitBuffer();
     
     std::string GetQosPriorityName(QosPriority c) const;
-    void ExecuteSamplingCycle();
 
     Ptr<Socket> m_socket;
     Address m_peerAddress;
     std::unique_ptr<WbanTrafficGenerator> m_generator;
+    
     EventId m_sendEvent;
     EventId m_generateEvent;
     
@@ -72,8 +73,6 @@ private:
     bool m_macSyncLost; 
     Ptr<ns3::lrwpan::LrWpanMac> m_mac;
     uint8_t m_channel;
-    
-    // TDMA Scheduling Variables
     uint8_t m_allocatedSlots; 
 };
 

@@ -7,6 +7,10 @@
 #include "ns3/basic-energy-source-helper.h"
 #include "ns3/packet-socket-helper.h"
 #include "ns3/packet-sink-helper.h" 
+#include "ns3/lr-wpan-mac.h"
+
+// Explicit inclusion for socket tags to verify Tier-2 ingress
+#include "ns3/socket.h"
 
 // Exclusively relying on standard ns-3 lr-wpan headers
 #include "ns3/lr-wpan-module.h"
@@ -16,6 +20,7 @@
 #include "wban-config.h"
 #include "wban-traffic-generator.h" 
 #include "wban-sensor-app.h"        
+#include "wban-central-scheduler.h" 
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -29,14 +34,49 @@ std::map<uint32_t, Ptr<WifiNetDevice>> g_backhaulDevices;
 std::map<uint32_t, Ptr<ns3::energy::BasicEnergySource>> g_nodeBatteries; 
 
 // ============================================================================
-// COORDINATOR MLME CALLBACKS
+// TRACE CALLBACKS FOR LOGGING & METRICS
 // ============================================================================
 
-// Bound to Node 0's MAC to track exactly when the beacon train starts.
+void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityClass)
+{
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node " << nodeId 
+                << " | Prio (Tier-2 Tag): " << priorityClass << " | Size: " << packet->GetSize() << " bytes");
+}
+
+void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
+{
+    SocketPriorityTag tag;
+    uint32_t prio = 3; 
+    
+    if (packet->PeekPacketTag(tag)) {
+        prio = tag.GetPriority();
+    }
+    
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Rx | Node 0 (Coordinator) received packet | Size: " 
+                << packet->GetSize() << " bytes | Extracted Prio Tag: " << prio);
+}
+
+// ============================================================================
+// COORDINATOR TIMING & SCHEDULING HOOKS
+// ============================================================================
+
+void TriggerMapSchedule()
+{
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Hub | Computing MAP TDMA Schedule...");
+    WbanCentralScheduler::GetInstance().ComputeMapSchedule();
+    Simulator::Schedule(Seconds(0.49152), &TriggerMapSchedule);
+}
+
+static bool g_panStarted = false; 
+
 void CoordinatorStartConfirm(MlmeStartConfirmParams params)
 {
     if (params.m_status == MacStatus::SUCCESS) {
-        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node 0 | Coordinator PAN successfully started beacon generation.");
+        if (!g_panStarted) {
+            g_panStarted = true;
+            NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node 0 | Coordinator PAN successfully started.");
+            TriggerMapSchedule();
+        }
     } else {
         NS_LOG_ERROR("Node 0 | PAN Coordinator failed to start.");
     }
@@ -44,20 +84,17 @@ void CoordinatorStartConfirm(MlmeStartConfirmParams params)
 
 int main(int argc, char *argv[])
 {
-    // Allow command-line parsing to easily modify parameters without recompiling
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
-    double simDuration = 150.0; 
+    double simDuration = 300.0; 
     
     // ========================================================================
     // LOGGING CONFIGURATION
     // ========================================================================
-    // 1. Coordinator & Topology Logs
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
-    // 2. Sensor Node Application Logs (Generation & TDMA triggers)
-    LogComponentEnable("WbanSensorApp", LOG_LEVEL_ALL);
-    // 3. Native 802.15.4 MAC Logs (Beacons and MLME states)
+    LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
+    LogComponentEnable("WbanCentralScheduler", LOG_LEVEL_ALL); 
     LogComponentEnable("LrWpanMac", LOG_LEVEL_INFO); 
 
     // ========================================================================
@@ -76,8 +113,6 @@ int main(int argc, char *argv[])
     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
     mobility.Install(allNodes);
     
-    // PacketSocket allows us to bypass heavy IP/routing layers (IPv4/AODV) 
-    // and send raw MAC frames directly from the application.
     PacketSocketHelper packetSocket;
     packetSocket.Install(allNodes);
 
@@ -95,36 +130,33 @@ int main(int argc, char *argv[])
 
     for (const auto& config : WBAN_NETWORK)
     {
-        // Node 1 is the external LPU. It communicates solely over Wi-Fi backhaul, 
-        // so it does not receive an 802.15.4 WBAN radio.
         if (config.nodeId == 1) continue; 
 
         NetDeviceContainer dev = lrWpanHelper.Install(allNodes.Get(config.nodeId));
-        Ptr<LrWpanNetDevice> lrwpanDev = DynamicCast<LrWpanNetDevice>(dev.Get(0));
-        
-        Ptr<LrWpanMac> mac = lrwpanDev->GetMac();
+        Ptr<LrWpanNetDevice> lrwpanDev = DynamicCast<LrWpanNetDevice>(dev.Get(0)); 
 
-        mac->SetAttribute("macMinBE", UintegerValue(0)); 
-        mac->SetAttribute("macMaxBE", UintegerValue(0)); 
-        mac->SetAttribute("macMaxCSMABackoffs", UintegerValue(0)); 
-        mac->SetPanId(unifiedPanId);
+        Ptr<LrWpanMac> mac = lrwpanDev->GetMac();
+        Ptr<LrWpanCsmaCa> csma = lrwpanDev->GetCsmaCa();
+
+        // Restore legal CSMA limits so physical layer operates without crashing.
+        csma->SetMacMinBE(3);
+        csma->SetMacMaxBE(5); 
+        csma->SetMacMaxCSMABackoffs(4);
+        
         mac->SetPanId(unifiedPanId); 
         mac->SetShortAddress(Mac16Address(config.nodeId));
         
         if (config.isCoordinator) 
         {
-            // Wire the confirmation callback so we know T=0 for the beacon train
+            // CRITICAL FIX: Keep the Coordinator awake during the inactive superframe.
+            // If it sleeps, packets will not reach the PacketSink to trigger the backhaul.
+            mac->SetRxOnWhenIdle(true);
+
             mac->SetMlmeStartConfirmCallback(MakeCallback(&CoordinatorStartConfirm));
 
             MlmeStartRequestParams params;
             params.m_panCoor = true;          
             params.m_PanId = unifiedPanId;    
-            
-            // SUPERFRAME DUTY CYCLING MATH:
-            // BO = 5: Beacon arrives every ~491.52 ms
-            // SO = 3: Active superframe window is ~122.88 ms long.
-            // This 122ms window comfortably fits all 10 of our Application-Layer 
-            // TDMA sensor transmissions before the Coordinator goes to sleep.
             params.m_bcnOrd = 5;              
             params.m_sfrmOrd = 3;             
             params.m_logCh = config.channel;  
@@ -141,6 +173,10 @@ int main(int argc, char *argv[])
     WifiHelper wifi;
     wifi.SetStandard(WIFI_STANDARD_80211n); 
     
+    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
+                                 "DataMode", StringValue("HtMcs7"),
+                                 "ControlMode", StringValue("HtMcs0"));
+    
     YansWifiPhyHelper wifiPhy;
     wifiPhy.SetChannel(YansWifiChannelHelper::Default().Create());
     
@@ -148,8 +184,6 @@ int main(int argc, char *argv[])
     wifiMac.SetType("ns3::AdhocWifiMac");
 
     NetDeviceContainer wifiDevices;
-    // Install Wi-Fi backhaul on Node 0 (Coordinator) and Node 1 (LPU).
-    // This provides the NetDevice where the custom GCL QueueDisc will eventually be installed[cite: 18].
     wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(0))); 
     wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(1))); 
 
@@ -173,8 +207,6 @@ int main(int argc, char *argv[])
     // ======================================================================== 
     Address coordMacAddress = g_lrwpanDevices[0]->GetAddress();
 
-    // Set up the generic PacketSink on Node 0 to catch the incoming sensor payloads.
-    // The Rx packet trace has been explicitly removed.
     PacketSocketAddress localSinkAddr;
     localSinkAddr.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
     localSinkAddr.SetProtocol(0); 
@@ -184,12 +216,12 @@ int main(int argc, char *argv[])
     sinkApp.Start(Seconds(0.0));
     sinkApp.Stop(Seconds(simDuration));
 
-    // Initialize all Sensor Applications
+    sinkApp.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&CoordinatorRxTrace));
+
     for (const auto& config : WBAN_NETWORK)
     {
         if (config.nodeId == 0 || config.nodeId == 1) continue; 
 
-        // 1. Setup the math engine for dynamic payload/interval sizes
         std::unique_ptr<WbanTrafficGenerator> mathEngine = std::make_unique<WbanTrafficGenerator>(
             config.nodeId, config.applicationIntervalSec, config.maxPayloadSize, 
             config.payloadJitter, config.intervalJitter, config.trafficRatios
@@ -203,21 +235,17 @@ int main(int argc, char *argv[])
         Ptr<Node> node = allNodes.Get(config.nodeId);
         node->AddApplication(sensorApp);
 
-        // 2. Extract the standard MAC pointer to pass into the application
         Ptr<LrWpanMac> mac = g_lrwpanDevices[config.nodeId]->GetMac();
         
-        // Pass MAC, Channel, and the blueprint's requested slots into the Sensor App
-        // This relies entirely on the Application-Layer TDMA math fallback.
-        sensorApp->Setup(coordMacAddress, std::move(mathEngine), config.maxPayloadSize, mac, config.channel, config.requestedGtsSlots);
+        sensorApp->Setup(coordMacAddress, std::move(mathEngine), config.maxPayloadSize, 
+                         mac, config.channel, config.requestedGtsSlots, config.baseHierarchy);
         
-        // 3. WIRE MAC MLME EVENTS DIRECTLY TO THE APPLICATION
-        // This bridges the standard MAC layer to your custom WbanSensorApp, 
-        // allowing the app to calculate its TDMA offsets the moment the MAC sees a beacon.
+        sensorApp->TraceConnectWithoutContext("Tx", MakeCallback(&SensorTxTrace));
+        
         mac->SetMlmeBeaconNotifyIndicationCallback(MakeCallback(&WbanSensorApp::OnMacBeaconNotify, sensorApp));
         mac->SetMlmeSyncLossIndicationCallback(MakeCallback(&WbanSensorApp::OnMacSyncLoss, sensorApp));
         mac->SetMlmeStartConfirmCallback(MakeCallback(&WbanSensorApp::OnMacStartConfirm, sensorApp));
         
-        // Stagger application boot-up slightly to let the Coordinator establish the network at T=0
         sensorApp->SetStartTime(Seconds(1.0));
         sensorApp->SetStopTime(Seconds(simDuration));
     }
