@@ -8,11 +8,7 @@
 #include "ns3/packet-socket-helper.h"
 #include "ns3/packet-sink-helper.h" 
 #include "ns3/lr-wpan-mac.h"
-
-// Explicit inclusion for socket tags to verify Tier-2 ingress
 #include "ns3/socket.h"
-
-// Exclusively relying on standard ns-3 lr-wpan headers
 #include "ns3/lr-wpan-module.h"
 #include "ns3/spectrum-module.h"
 #include "ns3/propagation-module.h"
@@ -28,58 +24,47 @@ using namespace ns3::lrwpan;
 
 NS_LOG_COMPONENT_DEFINE("WbanTsnDrlTopology");
 
-// Global registries to track specific layer pointers for cross-layer application bindings
 std::map<uint32_t, Ptr<LrWpanNetDevice>> g_lrwpanDevices;       
 std::map<uint32_t, Ptr<WifiNetDevice>> g_backhaulDevices;   
 std::map<uint32_t, Ptr<ns3::energy::BasicEnergySource>> g_nodeBatteries; 
 
-// ============================================================================
-// TRACE CALLBACKS FOR LOGGING & METRICS
-// ============================================================================
-
 void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityClass)
 {
     NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node " << nodeId 
-                << " | Prio (Tier-2 Tag): " << priorityClass << " | Size: " << packet->GetSize() << " bytes");
+                << " | Prio: " << priorityClass << " | Size: " << packet->GetSize() << " bytes");
 }
 
 void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
 {
+    // Ignore the Sync Broadcasts getting loopbacked
+    if (packet->GetSize() == 5) return;
+
     SocketPriorityTag tag;
     uint32_t prio = 3; 
+    if (packet->PeekPacketTag(tag)) prio = tag.GetPriority();
     
-    if (packet->PeekPacketTag(tag)) {
-        prio = tag.GetPriority();
+    WbanDemandTag demandTag;
+    if (packet->PeekPacketTag(demandTag)) {
+        WbanCentralScheduler::GetInstance().UpdateNodeDemand(
+            demandTag.GetNodeId(), demandTag.GetDemand()
+        );
     }
     
     NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Rx | Node 0 (Coordinator) received packet | Size: " 
                 << packet->GetSize() << " bytes | Extracted Prio Tag: " << prio);
 }
 
-// ============================================================================
-// COORDINATOR TIMING & SCHEDULING HOOKS
-// ============================================================================
-
-void TriggerMapSchedule()
+// NEW: Transmits the Application-Layer Sync Frame every 0.49s
+void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
 {
-    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Hub | Computing MAP TDMA Schedule...");
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...");
     WbanCentralScheduler::GetInstance().ComputeMapSchedule();
-    Simulator::Schedule(Seconds(0.49152), &TriggerMapSchedule);
-}
-
-static bool g_panStarted = false; 
-
-void CoordinatorStartConfirm(MlmeStartConfirmParams params)
-{
-    if (params.m_status == MacStatus::SUCCESS) {
-        if (!g_panStarted) {
-            g_panStarted = true;
-            NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Node 0 | Coordinator PAN successfully started.");
-            TriggerMapSchedule();
-        }
-    } else {
-        NS_LOG_ERROR("Node 0 | PAN Coordinator failed to start.");
-    }
+    
+    // Create a 5-byte physical sync frame to trigger the sensors
+    Ptr<Packet> syncBeacon = Create<Packet>(5);
+    coordBroadcastSocket->SendTo(syncBeacon, 0, destBroadcast);
+    
+    Simulator::Schedule(Seconds(0.49152), &TriggerMapSchedule, coordBroadcastSocket, destBroadcast);
 }
 
 int main(int argc, char *argv[])
@@ -89,17 +74,10 @@ int main(int argc, char *argv[])
 
     double simDuration = 300.0; 
     
-    // ========================================================================
-    // LOGGING CONFIGURATION
-    // ========================================================================
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
     LogComponentEnable("WbanCentralScheduler", LOG_LEVEL_ALL); 
-    LogComponentEnable("LrWpanMac", LOG_LEVEL_INFO); 
-
-    // ========================================================================
-    // PHASE 1: NODE CREATION & MOBILITY 
-    // ========================================================================
+    
     NodeContainer allNodes;
     allNodes.Create(WBAN_NETWORK.size());
 
@@ -107,7 +85,6 @@ int main(int argc, char *argv[])
     for (const auto& config : WBAN_NETWORK) {
         positionAlloc->Add(Vector3D(config.position.x, config.position.y, config.position.z));
     }
-
     MobilityHelper mobility;
     mobility.SetPositionAllocator(positionAlloc);
     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
@@ -116,11 +93,7 @@ int main(int argc, char *argv[])
     PacketSocketHelper packetSocket;
     packetSocket.Install(allNodes);
 
-    // ========================================================================
-    // PHASE 2: LR-WPAN (802.15.4) INTRA-BAN LAYER SETUP & TIMING
-    // ========================================================================
     LrWpanHelper lrWpanHelper;
-    
     Ptr<SingleModelSpectrumChannel> channel = CreateObject<SingleModelSpectrumChannel>();
     channel->AddPropagationLossModel(CreateObject<LogDistancePropagationLossModel>());
     channel->SetPropagationDelayModel(CreateObject<ConstantSpeedPropagationDelayModel>());
@@ -138,63 +111,36 @@ int main(int argc, char *argv[])
         Ptr<LrWpanMac> mac = lrwpanDev->GetMac();
         Ptr<LrWpanCsmaCa> csma = lrwpanDev->GetCsmaCa();
 
-        // Restore legal CSMA limits so physical layer operates without crashing.
         csma->SetMacMinBE(3);
         csma->SetMacMaxBE(5); 
         csma->SetMacMaxCSMABackoffs(4);
         
         mac->SetPanId(unifiedPanId); 
         mac->SetShortAddress(Mac16Address(config.nodeId));
-        
-        if (config.isCoordinator) 
-        {
-            // CRITICAL FIX: Keep the Coordinator awake during the inactive superframe.
-            // If it sleeps, packets will not reach the PacketSink to trigger the backhaul.
-            mac->SetRxOnWhenIdle(true);
-
-            mac->SetMlmeStartConfirmCallback(MakeCallback(&CoordinatorStartConfirm));
-
-            MlmeStartRequestParams params;
-            params.m_panCoor = true;          
-            params.m_PanId = unifiedPanId;    
-            params.m_bcnOrd = 5;              
-            params.m_sfrmOrd = 3;             
-            params.m_logCh = config.channel;  
-            
-            mac->MlmeStartRequest(params); 
-        } 
+         
+        // FIX: Removed MlmeStartRequest entirely. 
+        // The PHY is now in unslotted mode, acting as a stable, raw radio pipe.
+        if (config.isCoordinator) mac->SetRxOnWhenIdle(true);
         
         g_lrwpanDevices[config.nodeId] = lrwpanDev;
     }
 
-    // ========================================================================
-    // PHASE 3: WI-FI BACKHAUL SETUP (TIER 2)
-    // ========================================================================
     WifiHelper wifi;
     wifi.SetStandard(WIFI_STANDARD_80211n); 
-    
-    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
-                                 "DataMode", StringValue("HtMcs7"),
-                                 "ControlMode", StringValue("HtMcs0"));
+    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("HtMcs7"), "ControlMode", StringValue("HtMcs0"));
     
     YansWifiPhyHelper wifiPhy;
     wifiPhy.SetChannel(YansWifiChannelHelper::Default().Create());
-    
     WifiMacHelper wifiMac;
     wifiMac.SetType("ns3::AdhocWifiMac");
 
     NetDeviceContainer wifiDevices;
     wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(0))); 
     wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(1))); 
-
     g_backhaulDevices[0] = DynamicCast<WifiNetDevice>(wifiDevices.Get(0));
     g_backhaulDevices[1] = DynamicCast<WifiNetDevice>(wifiDevices.Get(1));
 
-    // ========================================================================
-    // PHASE 4: ENERGY MODEL ATTACHMENT 
-    // ========================================================================
     BasicEnergySourceHelper basicSourceHelper;
-    
     for (const auto& config : WBAN_NETWORK)
     {
         basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(config.initialEnergyJoules));
@@ -203,9 +149,9 @@ int main(int argc, char *argv[])
     }
 
     // ========================================================================
-    // PHASE 5: APPLICATION LAYER INTEGRATION (WITH MLME BINDINGS)
+    // COORDINATOR SYNC SETUP & BINDINGS
     // ======================================================================== 
-    Address coordMacAddress = g_lrwpanDevices[0]->GetAddress();
+    Address coordMacAddress = g_lrwpanDevices[0]->GetMac()->GetShortAddress();
 
     PacketSocketAddress localSinkAddr;
     localSinkAddr.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
@@ -215,8 +161,14 @@ int main(int argc, char *argv[])
     ApplicationContainer sinkApp = packetSinkHelper.Install(allNodes.Get(0));
     sinkApp.Start(Seconds(0.0));
     sinkApp.Stop(Seconds(simDuration));
-
     sinkApp.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&CoordinatorRxTrace));
+
+    // Create the Application-Layer Broadcast Socket for the Coordinator
+    Ptr<Socket> coordBroadcastSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
+    PacketSocketAddress destBroadcast;
+    destBroadcast.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
+    destBroadcast.SetPhysicalAddress(Mac16Address("ff:ff")); // Broadcast to all nodes
+    destBroadcast.SetProtocol(0);
 
     for (const auto& config : WBAN_NETWORK)
     {
@@ -228,7 +180,6 @@ int main(int argc, char *argv[])
         );
 
         Ptr<WbanSensorApp> sensorApp = CreateObject<WbanSensorApp>();
-        
         sensorApp->AssignStreams(config.nodeId * 10);
         mathEngine->AssignStreams((config.nodeId * 10) + 1);
 
@@ -236,23 +187,19 @@ int main(int argc, char *argv[])
         node->AddApplication(sensorApp);
 
         Ptr<LrWpanMac> mac = g_lrwpanDevices[config.nodeId]->GetMac();
-        
         sensorApp->Setup(coordMacAddress, std::move(mathEngine), config.maxPayloadSize, 
                          mac, config.channel, config.requestedGtsSlots, config.baseHierarchy);
         
         sensorApp->TraceConnectWithoutContext("Tx", MakeCallback(&SensorTxTrace));
         
-        mac->SetMlmeBeaconNotifyIndicationCallback(MakeCallback(&WbanSensorApp::OnMacBeaconNotify, sensorApp));
-        mac->SetMlmeSyncLossIndicationCallback(MakeCallback(&WbanSensorApp::OnMacSyncLoss, sensorApp));
-        mac->SetMlmeStartConfirmCallback(MakeCallback(&WbanSensorApp::OnMacStartConfirm, sensorApp));
-        
+        // Starts exactly at 1.0s to sync with the first Coordinator Broadcast
         sensorApp->SetStartTime(Seconds(1.0));
         sensorApp->SetStopTime(Seconds(simDuration));
     }
 
-    // ========================================================================
-    // PHASE 6: EXECUTION
-    // ========================================================================
+    // Schedule the first Application-Layer Sync broadcast at exactly 1.0s
+    Simulator::Schedule(Seconds(1.0), &TriggerMapSchedule, coordBroadcastSocket, destBroadcast);
+
     Simulator::Stop(Seconds(simDuration + 1.0)); 
     Simulator::Run();
     Simulator::Destroy();

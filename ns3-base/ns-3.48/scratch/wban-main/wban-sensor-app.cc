@@ -12,6 +12,18 @@ namespace wban {
 
 NS_LOG_COMPONENT_DEFINE("WbanSensorApp");
 
+TypeId WbanDemandTag::GetTypeId(void) {
+    static TypeId tid = TypeId("ns3::wban::WbanDemandTag")
+        .SetParent<Tag>()
+        .AddConstructor<WbanDemandTag>();
+    return tid;
+}
+TypeId WbanDemandTag::GetInstanceTypeId(void) const { return GetTypeId(); }
+uint32_t WbanDemandTag::GetSerializedSize(void) const { return 8; }
+void WbanDemandTag::Serialize(TagBuffer i) const { i.WriteU32(m_nodeId); i.WriteU32(m_demand); }
+void WbanDemandTag::Deserialize(TagBuffer i) { m_nodeId = i.ReadU32(); m_demand = i.ReadU32(); }
+void WbanDemandTag::Print(std::ostream &os) const { os << "NodeId=" << m_nodeId << " Demand=" << m_demand; }
+
 TypeId WbanSensorApp::GetTypeId(void)
 {
     static TypeId tid = TypeId("ns3::wban::WbanSensorApp")
@@ -25,21 +37,14 @@ TypeId WbanSensorApp::GetTypeId(void)
 }
 
 WbanSensorApp::WbanSensorApp() 
-    : m_socket(nullptr), 
-      m_currentBufferSize(0),
-      m_maxPayloadSize(0),
-      m_macSyncLost(true),
-      m_allocatedSlots(0)
+    : m_socket(nullptr), m_currentBufferSize(0), m_maxPayloadSize(0), m_allocatedSlots(0)
 {
     m_staggerVar = CreateObject<UniformRandomVariable>();
     m_staggerVar->SetAttribute("Min", DoubleValue(0.000));
     m_staggerVar->SetAttribute("Max", DoubleValue(0.050));
 }
 
-WbanSensorApp::~WbanSensorApp() 
-{ 
-    m_socket = nullptr; 
-}
+WbanSensorApp::~WbanSensorApp() { m_socket = nullptr; }
 
 void WbanSensorApp::Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, 
                           uint32_t maxPayloadSize, Ptr<ns3::lrwpan::LrWpanMac> mac, 
@@ -51,15 +56,10 @@ void WbanSensorApp::Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator
     m_mac = mac;           
     m_channel = channel;   
     m_allocatedSlots = requestedGtsSlots;
-    
     WbanCentralScheduler::GetInstance().RegisterNode(GetNode()->GetId(), baseHierarchy, requestedGtsSlots);
 }
 
-int64_t WbanSensorApp::AssignStreams(int64_t stream)
-{
-    m_staggerVar->SetStream(stream);
-    return 1; 
-}
+int64_t WbanSensorApp::AssignStreams(int64_t stream) { m_staggerVar->SetStream(stream); return 1; }
 
 void WbanSensorApp::StartApplication(void)
 {
@@ -69,6 +69,7 @@ void WbanSensorApp::StartApplication(void)
         
         PacketSocketAddress local;
         local.SetSingleDevice(GetNode()->GetDevice(0)->GetIfIndex());
+        local.SetProtocol(0);
         m_socket->Bind(local);
 
         PacketSocketAddress remote;
@@ -76,16 +77,12 @@ void WbanSensorApp::StartApplication(void)
         remote.SetSingleDevice(GetNode()->GetDevice(0)->GetIfIndex());
         remote.SetProtocol(0);
         m_socket->Connect(remote);
+        
+        // NEW: Listen directly to the network socket for the Coordinator's Sync Frame
+        m_socket->SetRecvCallback(MakeCallback(&WbanSensorApp::ReceiveSyncPacket, this));
     }
 
-    m_mac->SetRxOnWhenIdle(true);
-
-    NS_LOG_INFO("Node " << GetNode()->GetId() << " | App Started. Initiating MLME Sync on Channel " << (uint32_t)m_channel);
-
-    ns3::lrwpan::MlmeSyncRequestParams syncParams;
-    syncParams.m_logCh = m_channel;
-    syncParams.m_trackBcn = true;
-    m_mac->MlmeSyncRequest(syncParams);
+    NS_LOG_INFO("Node " << GetNode()->GetId() << " | App Started. Waiting for Network Sync Frame.");
 
     double firstInterval = m_generator->GetInterval();
     m_generateEvent = Simulator::Schedule(Seconds(firstInterval), &WbanSensorApp::GenerateData, this);
@@ -93,51 +90,47 @@ void WbanSensorApp::StartApplication(void)
 
 void WbanSensorApp::StopApplication(void)
 {
-    if (m_sendEvent.IsPending()) {
-        Simulator::Cancel(m_sendEvent);
-    }
-    if (m_socket) {
-        m_socket->Close();
-    }
+    if (m_sendEvent.IsPending()) Simulator::Cancel(m_sendEvent);
+    if (m_socket) m_socket->Close();
 }
 
 std::string WbanSensorApp::GetQosPriorityName(QosPriority c) const
 {
-    switch (c) {
-        case QOS_CP: return "CP";
-        case QOS_RP: return "RP";
-        case QOS_DP: return "DP";
-        case QOS_OP: return "OP";
-        default:     return "UNKNOWN";
-    }
+    switch (c) { case QOS_CP: return "CP"; case QOS_RP: return "RP"; case QOS_DP: return "DP"; case QOS_OP: return "OP"; default: return "UNKNOWN"; }
 }
 
 void WbanSensorApp::GenerateData()
 {
     QosPriority sampledType = m_generator->GenerateNextPacketType();
     uint32_t sampledSize = m_generator->GetPayloadSize();
-
     m_sampleBuffer.push_back({sampledType, sampledSize});
     m_currentBufferSize += sampledSize;
 
-    // NEW: Visible logging of physical sensor ticks
     NS_LOG_INFO("Node " << GetNode()->GetId() << " | Generated " << sampledSize 
                 << " bytes (Total Buffer: " << m_currentBufferSize << "B). Tag: " << GetQosPriorityName(sampledType));
-
-    WbanCentralScheduler::GetInstance().UpdateNodeDemand(GetNode()->GetId(), m_currentBufferSize);
 
     double nextInterval = m_generator->GetInterval();
     m_generateEvent = Simulator::Schedule(Seconds(nextInterval), &WbanSensorApp::GenerateData, this);
 }
 
-void WbanSensorApp::TransmitSlot()
+void WbanSensorApp::SendGtsRequest()
 {
-    if (m_macSyncLost) {
-        NS_LOG_INFO("Node " << GetNode()->GetId() << " | Transmit aborted: MAC Sync is lost.");
-        return; 
-    }
-    FlushAndTransmitBuffer();
+    if (m_currentBufferSize == 0) return;
+    Ptr<Packet> ctrlPacket = Create<Packet>(10); 
+    WbanDemandTag demandTag;
+    demandTag.SetNodeId(GetNode()->GetId());
+    demandTag.SetDemand(m_currentBufferSize);
+    ctrlPacket->AddPacketTag(demandTag);
+    
+    SocketPriorityTag prioTag;
+    prioTag.SetPriority(static_cast<uint32_t>(QOS_CP)); 
+    ctrlPacket->AddPacketTag(prioTag);
+    
+    m_socket->Send(ctrlPacket);
+    NS_LOG_INFO("Node " << GetNode()->GetId() << " | Sent Physical GTS Request over CAP for " << m_currentBufferSize << " bytes.");
 }
+
+void WbanSensorApp::TransmitSlot() { FlushAndTransmitBuffer(); }
 
 void WbanSensorApp::FlushAndTransmitBuffer()
 {
@@ -145,67 +138,63 @@ void WbanSensorApp::FlushAndTransmitBuffer()
 
     QosPriority aggregateClass = QOS_OP;
     uint32_t totalPayload = 0;
-
     for (const auto& sample : m_sampleBuffer) {
         totalPayload += sample.size;
         if (sample.type < aggregateClass) aggregateClass = sample.type;
     }
 
-    Ptr<Packet> packet = Create<Packet>(totalPayload);
+    const uint32_t MAX_MAC_PAYLOAD = 90; 
+    uint32_t maxAllowedBytes = m_allocatedSlots * MAX_MAC_PAYLOAD;
+    uint32_t bytesToSend = std::min(totalPayload, maxAllowedBytes);
+    uint32_t remainingDemand = totalPayload - bytesToSend;
     
-    // Tier-2 TSN Metadata tag strictly required for the backhaul Classify()[cite: 24].
-    SocketPriorityTag priorityTag;
-    priorityTag.SetPriority(static_cast<uint32_t>(aggregateClass));
-    packet->AddPacketTag(priorityTag);
+    while (bytesToSend > 0) {
+        uint32_t chunkSize = std::min(bytesToSend, MAX_MAC_PAYLOAD);
+        Ptr<Packet> packet = Create<Packet>(chunkSize);
+        
+        SocketPriorityTag priorityTag;
+        priorityTag.SetPriority(static_cast<uint32_t>(aggregateClass));
+        packet->AddPacketTag(priorityTag);
 
-    if (m_socket->Send(packet) >= 0) {
-        m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
-    } else {
-        NS_LOG_ERROR("Node " << GetNode()->GetId() << " | Socket Send Failed!");
+        WbanDemandTag demandTag;
+        demandTag.SetNodeId(GetNode()->GetId());
+        demandTag.SetDemand(remainingDemand);
+        packet->AddPacketTag(demandTag);
+
+        if (m_socket->Send(packet) >= 0) {
+            m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
+        } else {
+            NS_LOG_ERROR("Node " << GetNode()->GetId() << " | Socket Send Failed!");
+        }
+        bytesToSend -= chunkSize;
     }
     
     m_sampleBuffer.clear();
-    m_currentBufferSize = 0;
-
-    WbanCentralScheduler::GetInstance().UpdateNodeDemand(GetNode()->GetId(), 0);
+    m_currentBufferSize = remainingDemand;
 }
 
-// ============================================================================
-// MLME MAC CALLBACK IMPLEMENTATIONS
-// ============================================================================
-
-void WbanSensorApp::OnMacStartConfirm(ns3::lrwpan::MlmeStartConfirmParams params)
+// NEW: Application-Layer TDMA synchronization. Bypasses the 802.15.4 MAC bugs.
+void WbanSensorApp::ReceiveSyncPacket(Ptr<Socket> socket)
 {
-}
-
-void WbanSensorApp::OnMacBeaconNotify(ns3::lrwpan::MlmeBeaconNotifyIndicationParams params)
-{
-    if (m_macSyncLost) m_macSyncLost = false;
-
-    double offsetSeconds = WbanCentralScheduler::GetInstance().GetTransmissionOffset(GetNode()->GetId());
-
-    // FIXED: Upgraded from DEBUG to INFO so it bypasses the logging filter
-    if (offsetSeconds >= 0.0) {
-        NS_LOG_INFO("Node " << GetNode()->GetId() << " | Beacon Rx -> GRANTED TDMA offset: " << offsetSeconds << "s");
-        m_sendEvent = Simulator::Schedule(Seconds(offsetSeconds), &WbanSensorApp::TransmitSlot, this);
-    } else {
-        NS_LOG_INFO("Node " << GetNode()->GetId() << " | Beacon Rx -> Starved / Empty Buffer.");
+    Ptr<Packet> packet;
+    while ((packet = socket->Recv())) {
+        
+        // If packet size is exactly 5 bytes, it's the Coordinator's Application Sync Frame
+        if (packet->GetSize() == 5) {
+            double offsetSeconds = WbanCentralScheduler::GetInstance().GetTransmissionOffset(GetNode()->GetId());
+            
+            if (offsetSeconds >= 0.0) {
+                NS_LOG_INFO("Node " << GetNode()->GetId() << " | Sync Rx -> GRANTED TDMA offset: " << offsetSeconds << "s");
+                m_sendEvent = Simulator::Schedule(Seconds(offsetSeconds), &WbanSensorApp::TransmitSlot, this);
+            } else {
+                NS_LOG_INFO("Node " << GetNode()->GetId() << " | Sync Rx -> Starved / Empty Buffer.");
+                if (m_currentBufferSize > 0) {
+                    double jitter = m_staggerVar->GetValue(); 
+                    Simulator::Schedule(Seconds(jitter), &WbanSensorApp::SendGtsRequest, this);
+                }
+            }
+        }
     }
-}
-
-void WbanSensorApp::OnMacSyncLoss(ns3::lrwpan::MlmeSyncLossIndicationParams params)
-{
-    m_macSyncLost = true;
-    m_sampleBuffer.clear();
-    m_currentBufferSize = 0;
-    
-    NS_LOG_INFO("Node " << GetNode()->GetId() << " | MAC SYNC LOST. Flushing buffer and hunting for new beacon...");
-    WbanCentralScheduler::GetInstance().UpdateNodeDemand(GetNode()->GetId(), 0);
-
-    ns3::lrwpan::MlmeSyncRequestParams syncParams;
-    syncParams.m_logCh = m_channel;
-    syncParams.m_trackBcn = true;
-    Simulator::Schedule(Seconds(0.5), &ns3::lrwpan::LrWpanMac::MlmeSyncRequest, m_mac, syncParams);
 }
 
 } // namespace wban

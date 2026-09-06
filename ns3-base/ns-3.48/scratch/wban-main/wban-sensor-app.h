@@ -7,6 +7,7 @@
 #include "ns3/packet.h"
 #include "ns3/address.h"
 #include "ns3/socket.h"
+#include "ns3/tag.h"
 #include "ns3/random-variable-stream.h"
 #include "ns3/traced-callback.h"
 #include "wban-traffic-generator.h"
@@ -22,6 +23,24 @@
 namespace ns3 {
 namespace wban {
 
+class WbanDemandTag : public Tag {
+public:
+    static TypeId GetTypeId(void);
+    virtual TypeId GetInstanceTypeId(void) const override;
+    virtual uint32_t GetSerializedSize(void) const override;
+    virtual void Serialize(TagBuffer i) const override;
+    virtual void Deserialize(TagBuffer i) override;
+    virtual void Print(std::ostream &os) const override;
+
+    void SetDemand(uint32_t demand) { m_demand = demand; }
+    uint32_t GetDemand(void) const { return m_demand; }
+    void SetNodeId(uint32_t id) { m_nodeId = id; }
+    uint32_t GetNodeId(void) const { return m_nodeId; }
+private:
+    uint32_t m_demand{0};
+    uint32_t m_nodeId{0};
+};
+
 struct SensorSample {
     QosPriority type;
     uint32_t size;
@@ -34,16 +53,11 @@ public:
     WbanSensorApp();
     virtual ~WbanSensorApp();
 
-    // FIXED: Changed QosPriority to SensorHierarchy
     void Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, 
                uint32_t maxPayloadSize, Ptr<ns3::lrwpan::LrWpanMac> mac, 
                uint8_t channel, uint8_t requestedGtsSlots, SensorHierarchy baseHierarchy); 
                
     int64_t AssignStreams(int64_t stream);
-
-    void OnMacStartConfirm(ns3::lrwpan::MlmeStartConfirmParams params);
-    void OnMacBeaconNotify(ns3::lrwpan::MlmeBeaconNotifyIndicationParams params);
-    void OnMacSyncLoss(ns3::lrwpan::MlmeSyncLossIndicationParams params);
 
 protected:
     virtual void StartApplication(void) override;
@@ -53,6 +67,10 @@ private:
     void GenerateData();
     void TransmitSlot();
     void FlushAndTransmitBuffer();
+    void SendGtsRequest(); 
+    
+    // NEW: Replaces the unstable MAC MLME callbacks
+    void ReceiveSyncPacket(Ptr<Socket> socket);
     
     std::string GetQosPriorityName(QosPriority c) const;
 
@@ -70,7 +88,6 @@ private:
     Ptr<UniformRandomVariable> m_staggerVar;
     TracedCallback<Ptr<const Packet>, uint32_t, uint32_t> m_txTrace;
 
-    bool m_macSyncLost; 
     Ptr<ns3::lrwpan::LrWpanMac> m_mac;
     uint8_t m_channel;
     uint8_t m_allocatedSlots; 

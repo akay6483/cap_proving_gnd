@@ -12,6 +12,8 @@ void WbanCentralScheduler::RegisterNode(uint32_t nodeId, SensorHierarchy hierarc
     state.nodeId = nodeId;
     state.baseHierarchy = hierarchy; 
     state.maxRequestedSlots = maxSlots;
+    
+    // Initial state assumes empty buffer until the Coordinator physically receives a demand tag
     state.currentBufferBytes = 0; 
 
     m_registry[nodeId] = state;
@@ -32,7 +34,7 @@ void WbanCentralScheduler::ComputeMapSchedule()
     m_activeSchedule.clear();
     uint8_t slotsRemaining = MAX_USABLE_SLOTS; 
     
-    // Abstracted RAP Penalty: Start data allocation at Slot 4
+    // Push the TDMA schedule start time forward by 4 slots to legally bypass the CAP.
     double currentOffset = SLOT_DURATION_SEC * 4.0; 
     
     std::vector<NodeState*> p0_streaming;   
@@ -58,7 +60,6 @@ void WbanCentralScheduler::ComputeMapSchedule()
     for (NodeState* node : p0_streaming) {
         if (slotsRemaining == 0) break; 
         
-        // FIXED: Safe narrowing conversion to ensure std::min resolves the correct type
         uint32_t slotsNeeded = (node->currentBufferBytes + BYTES_PER_SLOT - 1) / BYTES_PER_SLOT;
         uint8_t needed8 = static_cast<uint8_t>(std::min<uint32_t>(slotsNeeded, 255));
         uint8_t slotsGranted = std::min({needed8, node->maxRequestedSlots, slotsRemaining});
@@ -112,8 +113,8 @@ void WbanCentralScheduler::ComputeMapSchedule()
                 slotsRemaining -= slotsGranted;
             }
 
-            // FIXED: Prevent node starvation. If slots run out, pin the 
-            // round-robin index to ensure this specific node gets priority next time.
+            // Prevent node starvation. If slots run out, pin the round-robin index
+            // to ensure this specific node is strictly prioritized in the next superframe.
             if (slotsRemaining == 0) {
                 if (slotsGranted < needed8) {
                     m_roundRobinIndex = node->nodeId;
@@ -127,8 +128,8 @@ void WbanCentralScheduler::ComputeMapSchedule()
             checkedNodes++;
         }
         
-        // FIXED: If all nodes were serviced successfully and slots remain, 
-        // cleanly rotate the start index for the next superframe to guarantee fairness.
+        // If all nodes were serviced successfully and slots remain, 
+        // cleanly rotate the start index to guarantee fairness.
         if (slotsRemaining > 0) {
             m_roundRobinIndex = p2_routine[(startIndex + 1) % p2_routine.size()]->nodeId;
         }
@@ -141,6 +142,7 @@ double WbanCentralScheduler::GetTransmissionOffset(uint32_t nodeId)
     if (it != m_activeSchedule.end()) {
         return it->second; 
     }
+    // Return -1.0 if the node was not granted a slot, informing the sensor app to fall back to the CAP.
     return -1.0; 
 }
 
