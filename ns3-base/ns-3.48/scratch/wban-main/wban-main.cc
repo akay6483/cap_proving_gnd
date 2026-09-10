@@ -12,11 +12,13 @@
 #include "ns3/lr-wpan-module.h"
 #include "ns3/spectrum-module.h"
 #include "ns3/propagation-module.h"
+#include "ns3/internet-module.h"
 
 #include "wban-config.h"
 #include "wban-traffic-generator.h" 
 #include "wban-sensor-app.h"        
 #include "wban-central-scheduler.h" 
+#include "wban-coordinator-app.h"
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -72,7 +74,7 @@ int main(int argc, char *argv[])
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
-    double simDuration = 300.0; 
+    double simDuration = 100.0; 
     
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
@@ -148,22 +150,50 @@ int main(int argc, char *argv[])
         g_nodeBatteries[config.nodeId] = nodeSource.Get(0)->GetObject<ns3::energy::BasicEnergySource>();
     }
 
+
     // ========================================================================
     // COORDINATOR SYNC SETUP & BINDINGS
     // ======================================================================== 
+    
+    // ADD THIS LINE BACK: Get the Coordinator's 802.15.4 MAC address for the sensors
     Address coordMacAddress = g_lrwpanDevices[0]->GetMac()->GetShortAddress();
 
-    PacketSocketAddress localSinkAddr;
-    localSinkAddr.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
-    localSinkAddr.SetProtocol(0); 
-    
-    PacketSinkHelper packetSinkHelper("ns3::PacketSocketFactory", localSinkAddr);
-    ApplicationContainer sinkApp = packetSinkHelper.Install(allNodes.Get(0));
-    sinkApp.Start(Seconds(0.0));
-    sinkApp.Stop(Seconds(simDuration));
-    sinkApp.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&CoordinatorRxTrace));
+    // 1. Setup the 802.15.4 Rx Socket for the Coordinator (Node 0)
+    Ptr<Socket> coordLrWpanRxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
+    PacketSocketAddress localLrWpanAddr;
+    localLrWpanAddr.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
+    localLrWpanAddr.SetProtocol(0); 
+    coordLrWpanRxSocket->Bind(localLrWpanAddr);
 
-    // Create the Application-Layer Broadcast Socket for the Coordinator
+    // 2. Setup the Wi-Fi Tx Socket for the Coordinator (Node 0)
+    Ptr<Socket> coordWifiTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
+    PacketSocketAddress lpuWifiAddr;
+    lpuWifiAddr.SetSingleDevice(g_backhaulDevices[0]->GetIfIndex());
+    lpuWifiAddr.SetPhysicalAddress(g_backhaulDevices[1]->GetAddress()); // Target LPU Wi-Fi MAC
+    lpuWifiAddr.SetProtocol(0);
+    coordWifiTxSocket->Connect(lpuWifiAddr);
+
+    // 3. Install the new WbanCoordinatorApp
+    Ptr<WbanCoordinatorApp> coordApp = CreateObject<WbanCoordinatorApp>();
+    coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuWifiAddr);
+    allNodes.Get(0)->AddApplication(coordApp);
+    coordApp->SetStartTime(Seconds(0.0));
+    coordApp->SetStopTime(Seconds(simDuration));
+
+    // Optional: Hook the trace source from main to monitor forwarding
+    // coordApp->TraceConnectWithoutContext("TxToLpu", MakeCallback(&YourCustomTraceFunction));
+
+    // 4. Install a standard PacketSink on the LPU (Node 1) to receive the bridged packets
+    PacketSocketAddress lpuLocalWifiAddr;
+    lpuLocalWifiAddr.SetSingleDevice(g_backhaulDevices[1]->GetIfIndex());
+    lpuLocalWifiAddr.SetProtocol(0);
+    
+    PacketSinkHelper lpuSinkHelper("ns3::PacketSocketFactory", lpuLocalWifiAddr);
+    ApplicationContainer lpuSinkApp = lpuSinkHelper.Install(allNodes.Get(1));
+    lpuSinkApp.Start(Seconds(0.0));
+    lpuSinkApp.Stop(Seconds(simDuration));
+
+    // 5. Application-Layer Broadcast Socket for the Sync Beacons (Unchanged)
     Ptr<Socket> coordBroadcastSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
     PacketSocketAddress destBroadcast;
     destBroadcast.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
