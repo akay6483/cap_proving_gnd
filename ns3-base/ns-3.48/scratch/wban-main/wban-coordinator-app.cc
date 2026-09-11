@@ -10,6 +10,10 @@ namespace wban {
 
 NS_LOG_COMPONENT_DEFINE("WbanCoordinatorApp");
 
+std::string GetQosName(uint32_t priority) {
+    switch(priority) { case 0: return "CP"; case 1: return "RP"; case 2: return "DP"; case 3: return "OP"; default: return "UNKNOWN"; }
+}
+
 TypeId WbanCoordinatorApp::GetTypeId(void)
 {
     static TypeId tid = TypeId("ns3::wban::WbanCoordinatorApp")
@@ -138,25 +142,23 @@ void WbanCoordinatorApp::ProcessDemandTags(Ptr<const Packet> packet)
 // ============================================================================
 // PIPELINE STEP 4: EGRESS PREPARATION
 // ============================================================================
-uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<const Packet> packet) const
+
+uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<Packet> packet) const
 {
-    SocketPriorityTag priorityTag;
+    if (packet->GetSize() < 1) return 3; 
+
+    uint8_t buffer[1];
+    packet->CopyData(buffer, 1);
+    uint32_t priority = buffer[0];
     
-    // Attempt to read the QosPriority tag set by the WbanSensorApp
-    if (packet->PeekPacketTag(priorityTag)) {
-        return priorityTag.GetPriority();
-    }
+    // REMOVED: packet->RemoveAtStart(1); 
+    // We must leave the byte attached so the LPU can read it over the Wi-Fi link!
     
-    // Default to Best Effort / Ordinary Packet (QOS_OP) if no tag exists
-    return 3; 
+    if (priority > 3) priority = 3; 
+    
+    return priority; 
 }
 
-// ============================================================================
-// PIPELINE STEP 5: TRANSMISSION
-// ============================================================================
-// ============================================================================
-// PIPELINE STEP 5: TRANSMISSION
-// ============================================================================
 void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
 {
     packet->RemoveAllPacketTags();
@@ -165,13 +167,15 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
     pTag.SetPriority(priority);
     packet->AddPacketTag(pTag); 
 
-    // Simply use Send() since the UDP socket is already connected to the LPU's IP
     int bytesSent = m_txSocketWifi->Send(packet);
 
     if (bytesSent >= 0) {
         m_bytesForwarded += bytesSent;
         m_txTrace(packet, priority);
-        NS_LOG_DEBUG("Forwarded " << bytesSent << " bytes over UDP with Priority: " << priority);
+        
+        // Updated to log the QoS Type String
+        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node 0 (Coordinator) -> LPU | Size: " 
+                    << packet->GetSize() << " bytes | QoS Type: " << GetQosName(priority));
     } else {
         NS_LOG_ERROR("Coordinator failed to forward packet via UDP.");
     }

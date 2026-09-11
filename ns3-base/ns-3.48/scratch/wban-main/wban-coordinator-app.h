@@ -68,7 +68,8 @@ private:
      * \brief Step 4: Egress Preparation.
      * Reads the QoS priority tag set by the sensor node (defaults to best-effort).
      */
-    uint32_t ExtractPriority(Ptr<const Packet> packet) const;
+
+    uint32_t ExtractPriority(Ptr<Packet> packet) const;
 
     /**
      * \brief Step 5: Transmission.
@@ -92,8 +93,9 @@ private:
 
     // --- Trace Sources ---
     // Allows main script to hook into these events without modifying this file
-    TracedCallback<Ptr<const Packet>, Address> m_rxTrace;
+    TracedCallback<Ptr<const Packet>, const Address&> m_rxTrace;
     TracedCallback<Ptr<const Packet>, uint32_t> m_txTrace;
+    
 };
 
 } // namespace wban

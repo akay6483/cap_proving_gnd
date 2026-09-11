@@ -12,13 +12,15 @@
 #include "ns3/lr-wpan-module.h"
 #include "ns3/spectrum-module.h"
 #include "ns3/propagation-module.h"
-#include "ns3/internet-module.h"
+#include "ns3/internet-module.h"             // NEW: For InternetStack and IPv4
+#include "ns3/ipv4-global-routing-helper.h"  // NEW: For IP routing table population
 
 #include "wban-config.h"
 #include "wban-traffic-generator.h" 
 #include "wban-sensor-app.h"        
 #include "wban-central-scheduler.h" 
 #include "wban-coordinator-app.h"
+#include "wban-lpu-app.h"                    // NEW: For the custom LPU Application
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -40,10 +42,6 @@ void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
 {
     // Ignore the Sync Broadcasts getting loopbacked
     if (packet->GetSize() == 5) return;
-
-    SocketPriorityTag tag;
-    uint32_t prio = 3; 
-    if (packet->PeekPacketTag(tag)) prio = tag.GetPriority();
     
     WbanDemandTag demandTag;
     if (packet->PeekPacketTag(demandTag)) {
@@ -52,11 +50,11 @@ void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
         );
     }
     
-    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Rx | Node 0 (Coordinator) received packet | Size: " 
-                << packet->GetSize() << " bytes | Extracted Prio Tag: " << prio);
+    // Simply log the physical reception
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Size: " << packet->GetSize() << " bytes");
 }
 
-// NEW: Transmits the Application-Layer Sync Frame every 0.49s
+// Transmits the Application-Layer Sync Frame every 0.49s
 void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
 {
     NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...");
@@ -78,7 +76,11 @@ int main(int argc, char *argv[])
     
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
-    LogComponentEnable("WbanCentralScheduler", LOG_LEVEL_ALL); 
+    LogComponentEnable("WbanCentralScheduler", LOG_LEVEL_ALL);
+    
+    // NEW: Enable bridge and LPU logs for verification
+    LogComponentEnable("WbanCoordinatorApp", LOG_LEVEL_DEBUG);
+    LogComponentEnable("LpuApp", LOG_LEVEL_ALL);
     
     NodeContainer allNodes;
     allNodes.Create(WBAN_NETWORK.size());
@@ -120,8 +122,6 @@ int main(int argc, char *argv[])
         mac->SetPanId(unifiedPanId); 
         mac->SetShortAddress(Mac16Address(config.nodeId));
          
-        // FIX: Removed MlmeStartRequest entirely. 
-        // The PHY is now in unslotted mode, acting as a stable, raw radio pipe.
         if (config.isCoordinator) mac->SetRxOnWhenIdle(true);
         
         g_lrwpanDevices[config.nodeId] = lrwpanDev;
@@ -150,13 +150,29 @@ int main(int argc, char *argv[])
         g_nodeBatteries[config.nodeId] = nodeSource.Get(0)->GetObject<ns3::energy::BasicEnergySource>();
     }
 
+    InternetStackHelper internet;
+    
+    // NEW FIX: Disable IPv6 to prevent automatic network discovery packets 
+    // from polluting the 802.15.4 radio and crashing the MAC buffer.
+    internet.SetIpv6StackInstall(false); 
+    
+    internet.Install(allNodes.Get(0)); // Coordinator
+    internet.Install(allNodes.Get(1)); // LPU
+
+    Ipv4AddressHelper ipv4;
+    ipv4.SetBase("192.168.1.0", "255.255.255.0");
+    
+    Ipv4InterfaceContainer wifiInterfaces = ipv4.Assign(wifiDevices);
+    Ipv4Address lpuIpAddress = wifiInterfaces.GetAddress(1);
+
+    // Populate routing tables so Coordinator knows how to reach the LPU IP
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // ========================================================================
     // COORDINATOR SYNC SETUP & BINDINGS
     // ======================================================================== 
     
-    // ADD THIS LINE BACK: Get the Coordinator's 802.15.4 MAC address for the sensors
-    Address coordMacAddress = g_lrwpanDevices[0]->GetMac()->GetShortAddress();
+    Address coordMacAddress = Mac16Address("ff:ff");
 
     // 1. Setup the 802.15.4 Rx Socket for the Coordinator (Node 0)
     Ptr<Socket> coordLrWpanRxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
@@ -165,33 +181,27 @@ int main(int argc, char *argv[])
     localLrWpanAddr.SetProtocol(0); 
     coordLrWpanRxSocket->Bind(localLrWpanAddr);
 
-    // 2. Setup the Wi-Fi Tx Socket for the Coordinator (Node 0)
-    Ptr<Socket> coordWifiTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
-    PacketSocketAddress lpuWifiAddr;
-    lpuWifiAddr.SetSingleDevice(g_backhaulDevices[0]->GetIfIndex());
-    lpuWifiAddr.SetPhysicalAddress(g_backhaulDevices[1]->GetAddress()); // Target LPU Wi-Fi MAC
-    lpuWifiAddr.SetProtocol(0);
-    coordWifiTxSocket->Connect(lpuWifiAddr);
+    // 2. Setup the UDP Tx Socket for the Coordinator (Node 0) - Switched to Layer 4
+    Ptr<Socket> coordUdpTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::UdpSocketFactory"));
+    InetSocketAddress lpuUdpAddr(lpuIpAddress, 9); // Connect to LPU IP on Port 9
+    coordUdpTxSocket->Connect(lpuUdpAddr);
 
-    // 3. Install the new WbanCoordinatorApp
+    // 3. Install the WbanCoordinatorApp
     Ptr<WbanCoordinatorApp> coordApp = CreateObject<WbanCoordinatorApp>();
-    coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuWifiAddr);
+    coordApp->Setup(coordLrWpanRxSocket, coordUdpTxSocket, lpuUdpAddr);
     allNodes.Get(0)->AddApplication(coordApp);
     coordApp->SetStartTime(Seconds(0.0));
     coordApp->SetStopTime(Seconds(simDuration));
 
-    // Optional: Hook the trace source from main to monitor forwarding
-    // coordApp->TraceConnectWithoutContext("TxToLpu", MakeCallback(&YourCustomTraceFunction));
+    // Connect the Coordinator's Rx trace to see 802.15.4 ingress logs
+    coordApp->TraceConnectWithoutContext("RxFromSensor", MakeCallback(&CoordinatorRxTrace));
 
-    // 4. Install a standard PacketSink on the LPU (Node 1) to receive the bridged packets
-    PacketSocketAddress lpuLocalWifiAddr;
-    lpuLocalWifiAddr.SetSingleDevice(g_backhaulDevices[1]->GetIfIndex());
-    lpuLocalWifiAddr.SetProtocol(0);
-    
-    PacketSinkHelper lpuSinkHelper("ns3::PacketSocketFactory", lpuLocalWifiAddr);
-    ApplicationContainer lpuSinkApp = lpuSinkHelper.Install(allNodes.Get(1));
-    lpuSinkApp.Start(Seconds(0.0));
-    lpuSinkApp.Stop(Seconds(simDuration));
+    // 4. Install Custom LpuApp on the LPU (Node 1) listening for UDP traffic
+    Ptr<LpuApp> lpuApp = CreateObject<LpuApp>();
+    lpuApp->Setup(9); // Matches the InetSocketAddress port 9 above
+    allNodes.Get(1)->AddApplication(lpuApp);
+    lpuApp->SetStartTime(Seconds(0.0));
+    lpuApp->SetStopTime(Seconds(simDuration));
 
     // 5. Application-Layer Broadcast Socket for the Sync Beacons (Unchanged)
     Ptr<Socket> coordBroadcastSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));

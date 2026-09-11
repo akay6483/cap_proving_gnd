@@ -142,15 +142,21 @@ void WbanSensorApp::FlushAndTransmitBuffer()
         totalPayload += sample.size;
         if (sample.type < aggregateClass) aggregateClass = sample.type;
     }
-
-    const uint32_t MAX_MAC_PAYLOAD = 90; 
+    
+    const uint32_t MAX_MAC_PAYLOAD = 89;
     uint32_t maxAllowedBytes = m_allocatedSlots * MAX_MAC_PAYLOAD;
     uint32_t bytesToSend = std::min(totalPayload, maxAllowedBytes);
     uint32_t remainingDemand = totalPayload - bytesToSend;
     
     while (bytesToSend > 0) {
         uint32_t chunkSize = std::min(bytesToSend, MAX_MAC_PAYLOAD);
-        Ptr<Packet> packet = Create<Packet>(chunkSize);
+        
+        // NEW: Encode the priority into the very first byte of the packet buffer
+        uint8_t buffer[MAX_MAC_PAYLOAD + 1] = {0};
+        buffer[0] = static_cast<uint8_t>(aggregateClass); 
+        
+        // Create the packet with the buffer (size + 1 to account for the priority byte)
+        Ptr<Packet> packet = Create<Packet>(buffer, chunkSize + 1);
         
         SocketPriorityTag priorityTag;
         priorityTag.SetPriority(static_cast<uint32_t>(aggregateClass));

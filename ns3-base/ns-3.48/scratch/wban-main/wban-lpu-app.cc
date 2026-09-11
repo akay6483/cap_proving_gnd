@@ -12,6 +12,10 @@ NS_LOG_COMPONENT_DEFINE ("LpuApp");
 
 NS_OBJECT_ENSURE_REGISTERED (LpuApp);
 
+std::string GetQosName(uint32_t priority) {
+    switch(priority) { case 0: return "CP"; case 1: return "RP"; case 2: return "DP"; case 3: return "OP"; default: return "UNKNOWN"; }
+}
+
 TypeId 
 LpuApp::GetTypeId (void)
 {
@@ -93,41 +97,40 @@ LpuApp::StopApplication (void)
     }
 }
 
-void 
-LpuApp::HandleRead (Ptr<Socket> socket)
+void LpuApp::HandleRead (Ptr<Socket> socket)
 {
     NS_LOG_FUNCTION (this << socket);
     Ptr<Packet> packet;
     Address from;
     
-    // Drain the socket buffer completely
     while ((packet = socket->RecvFrom (from)))
     {
-        if (packet->GetSize () == 0)
-        {
-            break; 
-        }
+        if (packet->GetSize () == 0) break; 
 
         m_totalRxPackets++;
         m_totalRxBytes += packet->GetSize ();
-
         Time now = Simulator::Now ();
 
-        // 1. Calculate and Trace Jitter (Inter-arrival time)
-        if (m_totalRxPackets > 1)
-        {
+        if (m_totalRxPackets > 1) {
             Time jitter = now - m_lastRxTime;
             m_jitterTrace (jitter);
         }
         m_lastRxTime = now;
-
-        // 2. Trace generic Rx Event
         m_rxTrace (packet, from);
 
-        // 3. Process Custom Payload (DP, RP, OP WBAN Tags)
+        // NEW: Read the 1-byte priority header that survived the Wi-Fi link
+        uint8_t buffer[1] = {3}; // Default to OP
+        if (packet->GetSize() > 0) {
+            packet->CopyData(buffer, 1);
+        }
+        uint32_t priority = buffer[0];
+        if (priority > 3) priority = 3;
+
         ProcessPayload (packet);
 
-        NS_LOG_INFO ("Rx Packet: " << m_totalRxPackets << " | Size: " << packet->GetSize () << " bytes");
+        // Updated explicitly formatted Reception Log
+        NS_LOG_INFO ("[T=" << now.GetSeconds() << "s] Rx | LPU (Node 1) Received Packet " 
+                     << m_totalRxPackets << " | Size: " << packet->GetSize () << " bytes | QoS Type: " << GetQosName(priority));
     }
 }
 
