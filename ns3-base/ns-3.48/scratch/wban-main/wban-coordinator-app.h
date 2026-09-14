@@ -66,9 +66,8 @@ private:
 
     /**
      * \brief Step 4: Egress Preparation.
-     * Reads the QoS priority tag set by the sensor node (defaults to best-effort).
+     * Reads the QoS priority safely from the WbanTelemetryHeader without stripping it.
      */
-
     uint32_t ExtractPriority(Ptr<Packet> packet) const;
 
     /**

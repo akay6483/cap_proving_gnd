@@ -69,7 +69,6 @@ private:
     void FlushAndTransmitBuffer();
     void SendGtsRequest(); 
     
-    // NEW: Replaces the unstable MAC MLME callbacks
     void ReceiveSyncPacket(Ptr<Socket> socket);
     
     std::string GetQosPriorityName(QosPriority c) const;
@@ -85,6 +84,9 @@ private:
     uint32_t m_currentBufferSize;
     uint32_t m_maxPayloadSize; 
     
+    // NEW: Sequence counter for telemetry tracking
+    uint32_t m_seqCounter;
+    
     Ptr<UniformRandomVariable> m_staggerVar;
     TracedCallback<Ptr<const Packet>, uint32_t, uint32_t> m_txTrace;
 
@@ -97,5 +99,3 @@ private:
 } // namespace ns3
 
 #endif // WBAN_SENSOR_APP_H
-
-

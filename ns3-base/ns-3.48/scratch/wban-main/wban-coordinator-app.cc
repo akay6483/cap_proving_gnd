@@ -1,6 +1,7 @@
 #include "wban-coordinator-app.h"
-#include "wban-sensor-app.h"        // Provides WbanDemandTag and QosPriority
-#include "wban-central-scheduler.h" // Singleton for TDMA scheduling
+#include "wban-sensor-app.h"        
+#include "wban-central-scheduler.h" 
+#include "wban-telemetry.h"         
 #include "ns3/log.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
@@ -106,6 +107,13 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
         // Pipeline Step 2 & 3: Metadata Extraction & Dispatching
         ProcessDemandTags(packet);
 
+        // FIX: Ingress Filtering (GTS Requests)
+        // A 10-byte packet is purely an internal WBAN control frame.
+        // It has no telemetry header and should not be routed to the LPU.
+        if (packet->GetSize() == 10) {
+            continue;
+        }
+
         // Pipeline Step 4: Egress Preparation
         uint32_t priority = ExtractPriority(packet);
 
@@ -119,8 +127,6 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
 // ============================================================================
 bool WbanCoordinatorApp::IsSyncBeacon(Ptr<const Packet> packet) const
 {
-    // The Coordinator broadcasts 5-byte sync frames. If the socket receives one, 
-    // it is a local loopback that should be immediately dropped.
     return (packet->GetSize() == 5);
 }
 
@@ -131,7 +137,6 @@ void WbanCoordinatorApp::ProcessDemandTags(Ptr<const Packet> packet)
 {
     WbanDemandTag demandTag;
     if (packet->PeekPacketTag(demandTag)) {
-        // Feed the physical telemetry to the TDMA central scheduler singleton
         WbanCentralScheduler::GetInstance().UpdateNodeDemand(
             demandTag.GetNodeId(), 
             demandTag.GetDemand()
@@ -142,23 +147,31 @@ void WbanCoordinatorApp::ProcessDemandTags(Ptr<const Packet> packet)
 // ============================================================================
 // PIPELINE STEP 4: EGRESS PREPARATION
 // ============================================================================
-
 uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<Packet> packet) const
 {
-    if (packet->GetSize() < 1) return 3; 
+    // FIX: Defensive Memory Bounds Check
+    // Prevent the memory buffer from crashing if a fragmented or tiny packet slips through
+    if (packet->GetSize() < 15) {
+        return 3; 
+    }
 
-    uint8_t buffer[1];
-    packet->CopyData(buffer, 1);
-    uint32_t priority = buffer[0];
+    WbanTelemetryHeader header;
     
-    // REMOVED: packet->RemoveAtStart(1); 
-    // We must leave the byte attached so the LPU can read it over the Wi-Fi link!
+    if (packet->PeekHeader(header)) {
+        uint32_t priority = header.GetPriority();
+        
+        if (priority > 3) {
+            return 3; 
+        }
+        return priority;
+    }
     
-    if (priority > 3) priority = 3; 
-    
-    return priority; 
+    return 3; 
 }
 
+// ============================================================================
+// PIPELINE STEP 5: TRANSMISSION
+// ============================================================================
 void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
 {
     packet->RemoveAllPacketTags();
@@ -173,7 +186,6 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
         m_bytesForwarded += bytesSent;
         m_txTrace(packet, priority);
         
-        // Updated to log the QoS Type String
         NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node 0 (Coordinator) -> LPU | Size: " 
                     << packet->GetSize() << " bytes | QoS Type: " << GetQosName(priority));
     } else {

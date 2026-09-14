@@ -1,4 +1,5 @@
 #include "wban-sensor-app.h"
+#include "wban-telemetry.h" 
 #include "ns3/log.h"
 #include "ns3/simulator.h"
 #include "ns3/packet-socket-factory.h"
@@ -36,8 +37,9 @@ TypeId WbanSensorApp::GetTypeId(void)
     return tid;
 }
 
+// FIX: Swapped m_seqCounter and m_allocatedSlots to match the .h file order
 WbanSensorApp::WbanSensorApp() 
-    : m_socket(nullptr), m_currentBufferSize(0), m_maxPayloadSize(0), m_allocatedSlots(0)
+    : m_socket(nullptr), m_currentBufferSize(0), m_maxPayloadSize(0), m_seqCounter(0), m_allocatedSlots(0)
 {
     m_staggerVar = CreateObject<UniformRandomVariable>();
     m_staggerVar->SetAttribute("Min", DoubleValue(0.000));
@@ -78,7 +80,6 @@ void WbanSensorApp::StartApplication(void)
         remote.SetProtocol(0);
         m_socket->Connect(remote);
         
-        // NEW: Listen directly to the network socket for the Coordinator's Sync Frame
         m_socket->SetRecvCallback(MakeCallback(&WbanSensorApp::ReceiveSyncPacket, this));
     }
 
@@ -143,7 +144,8 @@ void WbanSensorApp::FlushAndTransmitBuffer()
         if (sample.type < aggregateClass) aggregateClass = sample.type;
     }
     
-    const uint32_t MAX_MAC_PAYLOAD = 89;
+    const uint32_t MAX_MAC_PAYLOAD = 75;
+    
     uint32_t maxAllowedBytes = m_allocatedSlots * MAX_MAC_PAYLOAD;
     uint32_t bytesToSend = std::min(totalPayload, maxAllowedBytes);
     uint32_t remainingDemand = totalPayload - bytesToSend;
@@ -151,12 +153,12 @@ void WbanSensorApp::FlushAndTransmitBuffer()
     while (bytesToSend > 0) {
         uint32_t chunkSize = std::min(bytesToSend, MAX_MAC_PAYLOAD);
         
-        // NEW: Encode the priority into the very first byte of the packet buffer
-        uint8_t buffer[MAX_MAC_PAYLOAD + 1] = {0};
-        buffer[0] = static_cast<uint8_t>(aggregateClass); 
+        Ptr<Packet> packet = Create<Packet>(chunkSize);
         
-        // Create the packet with the buffer (size + 1 to account for the priority byte)
-        Ptr<Packet> packet = Create<Packet>(buffer, chunkSize + 1);
+        m_seqCounter++;
+        WbanTelemetryHeader tHeader;
+        tHeader.SetData(GetNode()->GetId(), m_seqCounter, static_cast<uint8_t>(aggregateClass), Simulator::Now().GetTimeStep());
+        packet->AddHeader(tHeader);
         
         SocketPriorityTag priorityTag;
         priorityTag.SetPriority(static_cast<uint32_t>(aggregateClass));
@@ -179,13 +181,11 @@ void WbanSensorApp::FlushAndTransmitBuffer()
     m_currentBufferSize = remainingDemand;
 }
 
-// NEW: Application-Layer TDMA synchronization. Bypasses the 802.15.4 MAC bugs.
 void WbanSensorApp::ReceiveSyncPacket(Ptr<Socket> socket)
 {
     Ptr<Packet> packet;
     while ((packet = socket->Recv())) {
         
-        // If packet size is exactly 5 bytes, it's the Coordinator's Application Sync Frame
         if (packet->GetSize() == 5) {
             double offsetSeconds = WbanCentralScheduler::GetInstance().GetTransmissionOffset(GetNode()->GetId());
             

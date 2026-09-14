@@ -1,4 +1,5 @@
 #include "wban-lpu-app.h"
+#include "wban-telemetry.h" // NEW: Required to parse WbanTelemetryHeader
 #include "ns3/uinteger.h"
 #include "ns3/log.h"
 #include "ns3/udp-socket-factory.h"
@@ -7,6 +8,7 @@
 #include "ns3/inet-socket-address.h"
 
 namespace ns3 {
+using namespace wban;
 
 NS_LOG_COMPONENT_DEFINE ("LpuApp");
 
@@ -118,17 +120,22 @@ void LpuApp::HandleRead (Ptr<Socket> socket)
         m_lastRxTime = now;
         m_rxTrace (packet, from);
 
-        // NEW: Read the 1-byte priority header that survived the Wi-Fi link
-        uint8_t buffer[1] = {3}; // Default to OP
-        if (packet->GetSize() > 0) {
-            packet->CopyData(buffer, 1);
+        // NEW: Unpack the formal telemetry header instead of raw bytes
+        WbanTelemetryHeader header;
+        uint32_t priority = 3; // Default to OP
+        
+        if (packet->RemoveHeader(header) > 0) {
+            priority = header.GetPriority();
+            if (priority > 3) priority = 3;
+
+            // Calculate and trace exact End-to-End Delay
+            Time txTime = Time(header.GetTxTime());
+            Time delay = now - txTime;
+            m_delayTrace(delay);
         }
-        uint32_t priority = buffer[0];
-        if (priority > 3) priority = 3;
 
         ProcessPayload (packet);
 
-        // Updated explicitly formatted Reception Log
         NS_LOG_INFO ("[T=" << now.GetSeconds() << "s] Rx | LPU (Node 1) Received Packet " 
                      << m_totalRxPackets << " | Size: " << packet->GetSize () << " bytes | QoS Type: " << GetQosName(priority));
     }
@@ -138,10 +145,6 @@ void
 LpuApp::ProcessPayload (Ptr<Packet> packet)
 {
     NS_LOG_FUNCTION (this << packet);
-    
-    // Default implementation does nothing.
-    // Subclass this method to extract WBAN specific headers, DP/RP tags,
-    // or calculate precise end-to-end delay if a custom timestamp tag exists.
 }
 
 } // namespace ns3
