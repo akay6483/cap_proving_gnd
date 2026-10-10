@@ -54,8 +54,9 @@ public:
     // 3. Sink (LPU) Trace - For End-to-End Metrics (Delay, Jitter, Goodput)
     static void RecordLpuRx(Ptr<const Packet> packet, const Address& address);
 
-    // 4. Native ns-3 MAC Layer Drops (To calculate exact cause of PDR loss)
+    // 4. Drop Accounting Traces (For strict Reward/Penalty computation in RL)
     static void RecordMacDrop(Ptr<const Packet> packet);
+    static void RecordAppDrop(uint32_t nodeId, uint32_t droppedBytes, uint32_t priority);
 
 private:
     static std::ofstream m_txCsv;

@@ -7,7 +7,7 @@ WbanTrafficGenerator::WbanTrafficGenerator(uint32_t nodeId,
                                            uint32_t maxPayload, 
                                            double payloadJitter,
                                            double intervalJitter,
-                                           std::array<double, 4> trafficRatios)
+                                           std::array<double, 3> trafficRatios)
     : m_nodeId(nodeId), 
       m_intervalSec(intervalSec), 
       m_maxPayloadSize(maxPayload), 
@@ -34,13 +34,15 @@ WbanTrafficGenerator::WbanTrafficGenerator(uint32_t nodeId,
         totalRatio += r;
     }
 
+    // Failsafe if user passed {0.0, 0.0, 0.0}, default to 100% Ordinary Packets
     if (totalRatio < 1e-6) {
-        m_trafficRatios = {0.0, 0.0, 0.0, 1.0};
+        m_trafficRatios = {0.0, 0.0, 1.0};
         totalRatio = 1.0;
     }
 
     double cumulative = 0.0;
-    for (size_t i = 0; i < 4; ++i) {
+    // Iterate over 3 tiers instead of 4
+    for (size_t i = 0; i < 3; ++i) {
         cumulative += (m_trafficRatios[i] / totalRatio);
         m_cumulativeProbabilities[i] = cumulative;
     }
@@ -49,14 +51,16 @@ WbanTrafficGenerator::WbanTrafficGenerator(uint32_t nodeId,
 QosPriority WbanTrafficGenerator::GenerateNextPacketType() {
     double typeRoll = m_probDist->GetValue();
 
-    for (size_t i = 0; i < 4; ++i) {
+    // Check bounds across 3 tiers
+    for (size_t i = 0; i < 3; ++i) {
         if (m_trafficRatios[i] > 0.0 && typeRoll <= m_cumulativeProbabilities[i]) {
             return static_cast<QosPriority>(i);
         }
     }
     
     // Fallback to the lowest available priority if floating point rounding fails
-    for (int i = 3; i >= 0; --i) {
+    // Iterates downwards from 2 (OP) to 0 (CP)
+    for (int i = 2; i >= 0; --i) {
         if (m_trafficRatios[i] > 0.0) {
             return static_cast<QosPriority>(i);
         }

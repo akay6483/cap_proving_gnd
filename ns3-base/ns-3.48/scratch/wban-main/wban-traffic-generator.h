@@ -14,7 +14,7 @@ public:
                          uint32_t maxPayload, 
                          double payloadJitter,
                          double intervalJitter,
-                         std::array<double, 4> trafficRatios);
+                         std::array<double, 3> trafficRatios); // Updated to 3-tier architecture
 
     // Generates the QoS priority of the next packet based on CDF ratios
     QosPriority GenerateNextPacketType();
@@ -34,8 +34,8 @@ private:
     uint32_t m_maxPayloadSize;
     double m_payloadJitter;
     double m_intervalJitter; 
-    std::array<double, 4> m_trafficRatios;
-    std::array<double, 4> m_cumulativeProbabilities; 
+    std::array<double, 3> m_trafficRatios;           // Updated to 3 tiers
+    std::array<double, 3> m_cumulativeProbabilities; // Updated to 3 tiers
     
     // --- ns-3 Native Stochastic Engine Components ---
     ns3::Ptr<ns3::UniformRandomVariable> m_probDist;   // For CDF priority rolls [0.0, 1.0)

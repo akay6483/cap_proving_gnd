@@ -25,8 +25,8 @@ public:
 
     void RegisterNode(uint32_t nodeId, SensorHierarchy hierarchy, uint8_t maxSlots);
     
-    // This is now strictly driven by physical telemetry extracted by the Coordinator's 
-    // packet sink from incoming WbanDemandTag headers, not by application-layer memory cheats.
+    // This is strictly driven by physical telemetry extracted by the Coordinator's 
+    // packet sink from incoming WbanDemandTag headers.
     void UpdateNodeDemand(uint32_t nodeId, uint32_t bytesInBuffer);
     
     void ComputeMapSchedule();

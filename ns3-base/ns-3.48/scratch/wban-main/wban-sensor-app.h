@@ -53,9 +53,13 @@ public:
     WbanSensorApp();
     virtual ~WbanSensorApp();
 
+    /**
+     * \brief Configures sensor parameters including byte-level buffer limits based on wban-config.
+     */
     void Setup(Address destAddr, std::unique_ptr<WbanTrafficGenerator> generator, 
                uint32_t maxPayloadSize, Ptr<ns3::lrwpan::LrWpanMac> mac, 
-               uint8_t channel, uint8_t requestedGtsSlots, SensorHierarchy baseHierarchy); 
+               uint8_t channel, uint8_t requestedGtsSlots, SensorHierarchy baseHierarchy,
+               uint32_t maxBufferSize); 
                
     int64_t AssignStreams(int64_t stream);
 
@@ -81,14 +85,15 @@ private:
     EventId m_generateEvent;
     
     std::vector<SensorSample> m_sampleBuffer;
-    uint32_t m_currentBufferSize;
+    uint32_t m_currentBufferSize;    // Total aggregated bytes currently in buffer
     uint32_t m_maxPayloadSize; 
+    uint32_t m_maxBufferSize;        // Strict hardware memory limit inherited from config
     
-    // NEW: Sequence counter for telemetry tracking
     uint32_t m_seqCounter;
     
     Ptr<UniformRandomVariable> m_staggerVar;
     TracedCallback<Ptr<const Packet>, uint32_t, uint32_t> m_txTrace;
+    TracedCallback<uint32_t, uint32_t, uint32_t> m_dropTrace; // NodeId, DroppedBytes, Priority
 
     Ptr<ns3::lrwpan::LrWpanMac> m_mac;
     uint8_t m_channel;

@@ -62,13 +62,14 @@ void WbanTelemetry::Initialize(const std::string& prefix) {
     m_txCsv << "Time_s,NodeID,SeqNum,Priority,Size_bytes\n";
 
     m_hubCsv.open(prefix + "_hub.csv");
-    m_hubCsv << "Time_s,Event,Priority,Size_bytes\n";
+    // Added NodeID and SeqNum to track packet lifecycle across tiers
+    m_hubCsv << "Time_s,Event,NodeID,SeqNum,Priority,Size_bytes\n";
 
     m_rxCsv.open(prefix + "_lpu_rx.csv");
     m_rxCsv << "Time_s,NodeID,SeqNum,Priority,E2EDelay_s,Size_bytes\n";
 
     m_dropCsv.open(prefix + "_drops.csv");
-    m_dropCsv << "Time_s,Layer,Size_bytes\n";
+    m_dropCsv << "Time_s,Layer,NodeID,Priority,Size_bytes\n";
 }
 
 void WbanTelemetry::Close() {
@@ -80,7 +81,9 @@ void WbanTelemetry::Close() {
 
 void WbanTelemetry::RecordSensorTx(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priority) {
     WbanTelemetryHeader header;
-    if (packet->PeekHeader(header)) {
+    
+    // Bounds check to prevent ns3::Buffer assertion crashes
+    if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
         m_txCsv << Simulator::Now().GetSeconds() << "," << nodeId << "," << header.GetSeqNum() << "," 
                 << priority << "," << packet->GetSize() << "\n";
     }
@@ -89,16 +92,39 @@ void WbanTelemetry::RecordSensorTx(Ptr<const Packet> packet, uint32_t nodeId, ui
 void WbanTelemetry::RecordCoordinatorRx(Ptr<const Packet> packet, const Address& address) {
     // Ignore physical 5-byte sync loopbacks
     if (packet->GetSize() <= 5) return;
-    m_hubCsv << Simulator::Now().GetSeconds() << ",Rx_802.15.4,N/A," << packet->GetSize() << "\n";
+    
+    WbanTelemetryHeader header;
+    uint32_t nodeId = 0;
+    uint32_t seqNum = 0;
+    
+    // Extract metadata only if the packet is large enough to contain the telemetry passport
+    if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
+        nodeId = header.GetNodeId();
+        seqNum = header.GetSeqNum();
+    }
+    
+    m_hubCsv << Simulator::Now().GetSeconds() << ",Rx_802.15.4," << nodeId << "," 
+             << seqNum << ",N/A," << packet->GetSize() << "\n";
 }
 
 void WbanTelemetry::RecordCoordinatorTx(Ptr<const Packet> packet, uint32_t priority) {
-    m_hubCsv << Simulator::Now().GetSeconds() << ",Tx_WiFi," << priority << "," << packet->GetSize() << "\n";
+    WbanTelemetryHeader header;
+    uint32_t nodeId = 0;
+    uint32_t seqNum = 0;
+    
+    if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
+        nodeId = header.GetNodeId();
+        seqNum = header.GetSeqNum();
+    }
+
+    m_hubCsv << Simulator::Now().GetSeconds() << ",Tx_WiFi," << nodeId << "," 
+             << seqNum << "," << priority << "," << packet->GetSize() << "\n";
 }
 
 void WbanTelemetry::RecordLpuRx(Ptr<const Packet> packet, const Address& address) {
     WbanTelemetryHeader header;
-    if (packet->PeekHeader(header)) {
+    
+    if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
         double rxTime = Simulator::Now().GetSeconds();
         double txTime = Time(header.GetTxTime()).GetSeconds();
         
@@ -108,7 +134,25 @@ void WbanTelemetry::RecordLpuRx(Ptr<const Packet> packet, const Address& address
 }
 
 void WbanTelemetry::RecordMacDrop(Ptr<const Packet> packet) {
-    m_dropCsv << Simulator::Now().GetSeconds() << ",MAC," << packet->GetSize() << "\n";
+    WbanTelemetryHeader header;
+    uint32_t nodeId = 0;
+    uint32_t priority = 2; // Default to OP (2) under the 3-tier system if the header is missing
+    
+    // Safely peek into the MAC packet to see if it carries our specific metadata
+    if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
+        nodeId = header.GetNodeId();
+        priority = header.GetPriority();
+        if (priority > 2) priority = 2; // Boundary defense
+    }
+    
+    m_dropCsv << Simulator::Now().GetSeconds() << ",MAC," << nodeId << "," 
+              << priority << "," << packet->GetSize() << "\n";
+}
+
+void WbanTelemetry::RecordAppDrop(uint32_t nodeId, uint32_t droppedBytes, uint32_t priority) {
+    // Logs Drop-Tail Buffer Overflows explicitly from the Application layer
+    m_dropCsv << Simulator::Now().GetSeconds() << ",APP," << nodeId << "," 
+              << priority << "," << droppedBytes << "\n";
 }
 
 } // namespace wban

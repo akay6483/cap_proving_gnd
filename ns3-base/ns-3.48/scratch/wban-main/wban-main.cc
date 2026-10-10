@@ -21,7 +21,7 @@
 #include "wban-central-scheduler.h" 
 #include "wban-coordinator-app.h"
 #include "wban-lpu-app.h"                    
-#include "wban-telemetry.h"                  // NEW: Telemetry system inclusion
+#include "wban-telemetry.h"                  
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -33,16 +33,24 @@ std::map<uint32_t, Ptr<LrWpanNetDevice>> g_lrwpanDevices;
 std::map<uint32_t, Ptr<WifiNetDevice>> g_backhaulDevices;   
 std::map<uint32_t, Ptr<ns3::energy::BasicEnergySource>> g_nodeBatteries; 
 
-// Runtime terminal log (preserves existing terminal output)
 void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityClass)
 {
+    WbanTelemetryHeader tHeader;
+    uint32_t seqNum = 0;
+    
+    // UPDATED: Strict bounds check prevents NS_ASSERT crash on non-telemetry control packets
+    if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
+        seqNum = tHeader.GetSeqNum();
+    }
+    
     NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node " << nodeId 
-                << " | Prio: " << priorityClass << " | Size: " << packet->GetSize() << " bytes");
+                << " | Seq: " << seqNum << " | Prio: " << priorityClass 
+                << " | Size: " << packet->GetSize() << " bytes");
 }
 
-// Runtime terminal log (preserves existing terminal output)
 void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
 {
+    // Ignore physical 5-byte sync loopbacks
     if (packet->GetSize() <= 5) return;
     
     WbanDemandTag demandTag;
@@ -52,10 +60,21 @@ void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
         );
     }
     
-    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Size: " << packet->GetSize() << " bytes");
+    WbanTelemetryHeader tHeader;
+    uint32_t nodeId = 0;
+    uint32_t seqNum = 0;
+    
+    // UPDATED: Strict bounds check protects the PeekHeader extraction
+    // Specifically prevents crashes when 10-byte GTS requests arrive during the CAP
+    if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
+        nodeId = tHeader.GetNodeId();
+        seqNum = tHeader.GetSeqNum();
+    }
+    
+    NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: " 
+                << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() << " bytes");
 }
 
-// Transmits the Application-Layer Sync Frame every 0.49s
 void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
 {
     NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...");
@@ -105,7 +124,7 @@ int main(int argc, char *argv[])
 
     for (const auto& config : WBAN_NETWORK)
     {
-        if (config.nodeId == 1) continue; 
+        if (config.nodeId == 1) continue;
 
         NetDeviceContainer dev = lrWpanHelper.Install(allNodes.Get(config.nodeId));
         Ptr<LrWpanNetDevice> lrwpanDev = DynamicCast<LrWpanNetDevice>(dev.Get(0)); 
@@ -183,11 +202,8 @@ int main(int argc, char *argv[])
     coordApp->SetStartTime(Seconds(0.0));
     coordApp->SetStopTime(Seconds(simDuration));
 
-    // Dual-Bind Coordinator Rx: One for Terminal Log, One for CSV Trace
     coordApp->TraceConnectWithoutContext("RxFromSensor", MakeCallback(&CoordinatorRxTrace));
     coordApp->TraceConnectWithoutContext("RxFromSensor", MakeCallback(&WbanTelemetry::RecordCoordinatorRx));
-    
-    // Bind Coordinator Tx to CSV Trace
     coordApp->TraceConnectWithoutContext("TxToLpu", MakeCallback(&WbanTelemetry::RecordCoordinatorTx));
 
     Ptr<LpuApp> lpuApp = CreateObject<LpuApp>();
@@ -196,7 +212,6 @@ int main(int argc, char *argv[])
     lpuApp->SetStartTime(Seconds(0.0));
     lpuApp->SetStopTime(Seconds(simDuration));
 
-    // Bind LPU Rx to CSV Trace
     lpuApp->TraceConnectWithoutContext("Rx", MakeCallback(&WbanTelemetry::RecordLpuRx));
 
     Ptr<Socket> coordBroadcastSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
@@ -222,12 +237,13 @@ int main(int argc, char *argv[])
         node->AddApplication(sensorApp);
 
         Ptr<LrWpanMac> mac = g_lrwpanDevices[config.nodeId]->GetMac();
-        sensorApp->Setup(coordMacAddress, std::move(mathEngine), config.maxPayloadSize, 
-                         mac, config.channel, config.requestedGtsSlots, config.baseHierarchy);
         
-        // Dual-Bind Sensor Tx: One for Terminal Log, One for CSV Trace
+        sensorApp->Setup(coordMacAddress, std::move(mathEngine), config.maxPayloadSize, 
+                         mac, config.channel, config.requestedGtsSlots, config.baseHierarchy, config.maxBufferSize);
+        
         sensorApp->TraceConnectWithoutContext("Tx", MakeCallback(&SensorTxTrace));
         sensorApp->TraceConnectWithoutContext("Tx", MakeCallback(&WbanTelemetry::RecordSensorTx));
+        sensorApp->TraceConnectWithoutContext("Drop", MakeCallback(&WbanTelemetry::RecordAppDrop));
         
         sensorApp->SetStartTime(Seconds(1.0));
         sensorApp->SetStopTime(Seconds(simDuration));
@@ -239,17 +255,14 @@ int main(int argc, char *argv[])
     // TELEMETRY & SIMULATION EXECUTION
     // ======================================================================== 
     
-    // Initialize the CSV files before the simulation starts
     WbanTelemetry::Initialize("wban_sim");
 
-    // Globally hook into ALL 802.15.4 MAC Drop events to log exact packet loss
     Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::LrWpanNetDevice/Mac/MacTxDrop", 
                                   MakeCallback(&WbanTelemetry::RecordMacDrop));
 
     Simulator::Stop(Seconds(simDuration + 1.0)); 
     Simulator::Run();
     
-    // Close the CSV files to flush buffers safely before destroying the simulator
     WbanTelemetry::Close();
     Simulator::Destroy();
 

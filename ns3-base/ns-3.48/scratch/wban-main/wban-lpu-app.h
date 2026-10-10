@@ -22,6 +22,8 @@ public:
 protected:
     virtual void StartApplication (void) override;
     virtual void StopApplication (void) override;
+    
+    // Acts as the final sink consumption point
     virtual void ProcessPayload (Ptr<Packet> packet);
 
 private:
@@ -33,6 +35,7 @@ private:
     uint64_t    m_totalRxBytes;
     Time        m_lastRxTime; 
 
+    // Telemetry trace hooks
     TracedCallback<Ptr<const Packet>, const Address &> m_rxTrace;
     TracedCallback<Time> m_delayTrace;
     TracedCallback<Time> m_jitterTrace;

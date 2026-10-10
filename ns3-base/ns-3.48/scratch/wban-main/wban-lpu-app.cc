@@ -1,5 +1,5 @@
 #include "wban-lpu-app.h"
-#include "wban-telemetry.h" // NEW: Required to parse WbanTelemetryHeader
+#include "wban-telemetry.h" 
 #include "ns3/uinteger.h"
 #include "ns3/log.h"
 #include "ns3/udp-socket-factory.h"
@@ -15,7 +15,13 @@ NS_LOG_COMPONENT_DEFINE ("LpuApp");
 NS_OBJECT_ENSURE_REGISTERED (LpuApp);
 
 std::string GetQosName(uint32_t priority) {
-    switch(priority) { case 0: return "CP"; case 1: return "RP"; case 2: return "DP"; case 3: return "OP"; default: return "UNKNOWN"; }
+    // Updated to the 3-Tier QoS Architecture
+    switch(priority) { 
+        case 0: return "CP"; 
+        case 1: return "RP"; 
+        case 2: return "OP"; 
+        default: return "UNKNOWN"; 
+    }
 }
 
 TypeId 
@@ -118,32 +124,46 @@ void LpuApp::HandleRead (Ptr<Socket> socket)
             m_jitterTrace (jitter);
         }
         m_lastRxTime = now;
+        
+        // Fire telemetry hook before stripping the header
         m_rxTrace (packet, from);
 
-        // NEW: Unpack the formal telemetry header instead of raw bytes
-        WbanTelemetryHeader header;
-        uint32_t priority = 3; // Default to OP
+        uint32_t priority = 2; // Default fallback to OP
+        uint32_t nodeId = 0;
+        uint32_t seqNum = 0;
         
-        if (packet->RemoveHeader(header) > 0) {
-            priority = header.GetPriority();
-            if (priority > 3) priority = 3;
+        // FIX: Strict bounds check prevents ns3::Buffer assertion crash 
+        // when tiny Wi-Fi background packets (like ARP) hit the socket.
+        if (packet->GetSize() >= 15) {
+            WbanTelemetryHeader header;
+            if (packet->RemoveHeader(header) > 0) {
+                priority = header.GetPriority();
+                nodeId = header.GetNodeId();
+                seqNum = header.GetSeqNum();
+                
+                // Hard-cap priority at 2 (OP) to protect the parser
+                if (priority > 2) priority = 2;
 
-            // Calculate and trace exact End-to-End Delay
-            Time txTime = Time(header.GetTxTime());
-            Time delay = now - txTime;
-            m_delayTrace(delay);
+                // Calculate and trace exact End-to-End Delay
+                Time txTime = Time(header.GetTxTime());
+                Time delay = now - txTime;
+                m_delayTrace(delay);
+            }
         }
 
         ProcessPayload (packet);
 
+        // UPDATED: Terminal log now outputs Node and Seq for granular lifecycle tracking
         NS_LOG_INFO ("[T=" << now.GetSeconds() << "s] Rx | LPU (Node 1) Received Packet " 
-                     << m_totalRxPackets << " | Size: " << packet->GetSize () << " bytes | QoS Type: " << GetQosName(priority));
+                     << m_totalRxPackets << " | Node: " << nodeId << " | Seq: " << seqNum 
+                     << " | Size: " << packet->GetSize () << " bytes | QoS Type: " << GetQosName(priority));
     }
 }
 
 void 
 LpuApp::ProcessPayload (Ptr<Packet> packet)
 {
+    // Packets are destroyed naturally as they fall out of scope, simulating consumption.
     NS_LOG_FUNCTION (this << packet);
 }
 

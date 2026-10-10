@@ -41,7 +41,7 @@ void WbanCentralScheduler::ComputeMapSchedule()
     std::vector<NodeState*> p1_high_event;  
     std::vector<NodeState*> p2_routine;     
     
-    // 1. FILTER & SORT DEMAND
+    // 1. FILTER & SORT DEMAND BY 3-TIER HIERARCHY
     for (auto& pair : m_registry) {
         NodeState& state = pair.second;
         
@@ -86,7 +86,7 @@ void WbanCentralScheduler::ComputeMapSchedule()
         }
     }
 
-    // 4. ALLOCATE PRIORITY 2/3 (Routine Data via Round-Robin)
+    // 4. ALLOCATE PRIORITY 2 (Routine Data via Round-Robin)
     if (slotsRemaining > 0 && !p2_routine.empty()) {
         
         size_t startIndex = 0;

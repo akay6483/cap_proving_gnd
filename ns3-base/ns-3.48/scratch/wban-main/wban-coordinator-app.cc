@@ -12,7 +12,13 @@ namespace wban {
 NS_LOG_COMPONENT_DEFINE("WbanCoordinatorApp");
 
 std::string GetQosName(uint32_t priority) {
-    switch(priority) { case 0: return "CP"; case 1: return "RP"; case 2: return "DP"; case 3: return "OP"; default: return "UNKNOWN"; }
+    // Updated to the 3-Tier QoS Architecture
+    switch(priority) { 
+        case 0: return "CP"; 
+        case 1: return "RP"; 
+        case 2: return "OP"; 
+        default: return "UNKNOWN"; 
+    }
 }
 
 TypeId WbanCoordinatorApp::GetTypeId(void)
@@ -101,15 +107,25 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
         m_bytesReceived += packet->GetSize();
         m_rxTrace(packet, senderAddress);
 
-        NS_LOG_DEBUG("[T=" << Simulator::Now().GetSeconds() << "s] Coordinator Rx | Size: " 
-                     << packet->GetSize() << " bytes");
+        // Peek the tracking header purely for clean terminal logging
+        WbanTelemetryHeader tHeader;
+        uint32_t nodeId = 0;
+        uint32_t seqNum = 0;
+        
+        // UPDATED: Strict bounds check prevents NS_ASSERT crash on 10-byte GTS Request packets
+        if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
+            nodeId = tHeader.GetNodeId();
+            seqNum = tHeader.GetSeqNum();
+        }
+
+        NS_LOG_DEBUG("[T=" << Simulator::Now().GetSeconds() << "s] Coordinator Rx | Node: " 
+                     << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() << " bytes");
 
         // Pipeline Step 2 & 3: Metadata Extraction & Dispatching
         ProcessDemandTags(packet);
 
-        // FIX: Ingress Filtering (GTS Requests)
-        // A 10-byte packet is purely an internal WBAN control frame.
-        // It has no telemetry header and should not be routed to the LPU.
+        // Ingress Filtering (GTS Requests)
+        // 10-byte packets are dropped here, preventing them from hitting the Wi-Fi backhaul
         if (packet->GetSize() == 10) {
             continue;
         }
@@ -149,10 +165,9 @@ void WbanCoordinatorApp::ProcessDemandTags(Ptr<const Packet> packet)
 // ============================================================================
 uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<Packet> packet) const
 {
-    // FIX: Defensive Memory Bounds Check
-    // Prevent the memory buffer from crashing if a fragmented or tiny packet slips through
+    // Defensive Memory Bounds Check
     if (packet->GetSize() < 15) {
-        return 3; 
+        return 2; // Default to OP (2) under the new 3-tier system
     }
 
     WbanTelemetryHeader header;
@@ -160,13 +175,14 @@ uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<Packet> packet) const
     if (packet->PeekHeader(header)) {
         uint32_t priority = header.GetPriority();
         
-        if (priority > 3) {
-            return 3; 
+        // Hard-cap priority at 2 (OP) to protect the downstream WiFi QoS queues
+        if (priority > 2) {
+            return 2; 
         }
         return priority;
     }
     
-    return 3; 
+    return 2; // Default fallback to OP (2)
 }
 
 // ============================================================================
@@ -186,8 +202,20 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
         m_bytesForwarded += bytesSent;
         m_txTrace(packet, priority);
         
-        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node 0 (Coordinator) -> LPU | Size: " 
-                    << packet->GetSize() << " bytes | QoS Type: " << GetQosName(priority));
+        // Peek the header again to display which exact packet is moving across the Tier-2 bridge
+        WbanTelemetryHeader tHeader;
+        uint32_t nodeId = 0;
+        uint32_t seqNum = 0;
+        
+        // UPDATED: Defensive bounds check applied to egress logging as well
+        if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
+            nodeId = tHeader.GetNodeId();
+            seqNum = tHeader.GetSeqNum();
+        }
+        
+        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node 0 (Coordinator) -> LPU | Fwd Node: " 
+                    << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() 
+                    << " bytes | QoS Type: " << GetQosName(priority));
     } else {
         NS_LOG_ERROR("Coordinator failed to forward packet via UDP.");
     }
