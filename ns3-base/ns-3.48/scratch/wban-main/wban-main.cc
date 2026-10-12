@@ -21,7 +21,8 @@
 #include "wban-central-scheduler.h" 
 #include "wban-coordinator-app.h"
 #include "wban-lpu-app.h"                    
-#include "wban-telemetry.h"                  
+#include "wban-telemetry.h" 
+#include "tsn-helper.h"                 
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -179,6 +180,21 @@ int main(int argc, char *argv[])
     Ipv4Address lpuIpAddress = wifiInterfaces.GetAddress(1);
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+
+    // ========================================================================
+    // TSN TRAFFIC CONTROL: GATE CONTROL LIST (GCL) INSTALLATION
+    // ======================================================================== 
+    NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
+    
+    TsnHelper tsnHelper;
+    tsnHelper.SetNumberOfQueues(3); // 4 Queues: CP (0), RP (1), OP (3)
+    
+    // Set a static baseline schedule: 24ms hypercycle (6ms per gate)
+    // The RL agent will later override this using UpdateGclSchedule()
+    tsnHelper.SetScheduleEqualTime(6.0, 3); 
+    
+    // Install the GCL exclusively on Node 0's Wi-Fi interface (egress to LPU)
+    QueueDiscContainer egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
 
     // ========================================================================
     // COORDINATOR SYNC SETUP & BINDINGS
