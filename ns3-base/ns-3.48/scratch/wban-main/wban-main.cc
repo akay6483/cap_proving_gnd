@@ -13,7 +13,9 @@
 #include "ns3/spectrum-module.h"
 #include "ns3/propagation-module.h"
 #include "ns3/internet-module.h"             
-#include "ns3/ipv4-global-routing-helper.h"  
+#include "ns3/ipv4-global-routing-helper.h"
+#include "ns3/ai-module.h"
+
 
 #include "wban-config.h"
 #include "wban-traffic-generator.h" 
@@ -22,7 +24,8 @@
 #include "wban-coordinator-app.h"
 #include "wban-lpu-app.h"                    
 #include "wban-telemetry.h" 
-#include "tsn-helper.h"                 
+#include "tsn-helper.h"      
+#include "wban-rl-interface.h"          
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -39,7 +42,6 @@ void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityC
     WbanTelemetryHeader tHeader;
     uint32_t seqNum = 0;
     
-    // UPDATED: Strict bounds check prevents NS_ASSERT crash on non-telemetry control packets
     if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
         seqNum = tHeader.GetSeqNum();
     }
@@ -51,7 +53,6 @@ void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityC
 
 void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
 {
-    // Ignore physical 5-byte sync loopbacks
     if (packet->GetSize() <= 5) return;
     
     WbanDemandTag demandTag;
@@ -65,8 +66,6 @@ void CoordinatorRxTrace(Ptr<const Packet> packet, const Address& address)
     uint32_t nodeId = 0;
     uint32_t seqNum = 0;
     
-    // UPDATED: Strict bounds check protects the PeekHeader extraction
-    // Specifically prevents crashes when 10-byte GTS requests arrive during the CAP
     if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
         nodeId = tHeader.GetNodeId();
         seqNum = tHeader.GetSeqNum();
@@ -85,6 +84,15 @@ void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
     coordBroadcastSocket->SendTo(syncBeacon, 0, destBroadcast);
     
     Simulator::Schedule(Seconds(0.49152), &TriggerMapSchedule, coordBroadcastSocket, destBroadcast);
+}
+
+void LogQueueSizes(Ptr<GclQueueDisc> gclDisc) {
+    GclQueueDisc::QueueStats stats = gclDisc->GetQueueStats();
+    // Assuming queues: 0=CP, 1=RP, 2=OP based on your 3-tier setup
+    WbanTelemetry::RecordQueueStats(stats.queueSizes[0], stats.queueSizes[1], stats.queueSizes[2]);
+    
+    // Poll every 50ms
+    Simulator::Schedule(MilliSeconds(50), &LogQueueSizes, gclDisc);
 }
 
 int main(int argc, char *argv[])
@@ -160,6 +168,8 @@ int main(int argc, char *argv[])
     g_backhaulDevices[0] = DynamicCast<WifiNetDevice>(wifiDevices.Get(0));
     g_backhaulDevices[1] = DynamicCast<WifiNetDevice>(wifiDevices.Get(1));
 
+    wifiPhy.EnablePcap("wban-wifi-coordinator", wifiDevices.Get(0));
+
     BasicEnergySourceHelper basicSourceHelper;
     for (const auto& config : WBAN_NETWORK)
     {
@@ -182,20 +192,52 @@ int main(int argc, char *argv[])
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // ========================================================================
+    // WI-FI EDCA QoS AGGRESSIVE TUNING (Medical Tier-2 Link)
+    // ======================================================================== 
+    NS_LOG_INFO("Configuring aggressive Wi-Fi EDCA queues for Coordinator.");
+    Ptr<WifiMac> coordMac = g_backhaulDevices[0]->GetMac();
+    
+    // 1. Critical Priority (CP) -> AC_VO (Voice, Tag 7)
+    // Most aggressive: Minimum Contention Window and AIFSN so it transmits immediately
+    PointerValue ptrVO;
+    // FIX: Updated attribute names for ns-3.48 compatibility (VO_Txop instead of VO_EdcaTxopN)
+    coordMac->GetAttribute("VO_Txop", ptrVO);
+    Ptr<QosTxop> edcaVO = ptrVO.Get<QosTxop>();
+    edcaVO->SetMinCw(3);    
+    edcaVO->SetMaxCw(7);    
+    edcaVO->SetAifsn(2);    
+
+    // 2. Reliable Priority (RP) -> AC_VI (Video, Tag 5)
+    PointerValue ptrVI;
+    coordMac->GetAttribute("VI_Txop", ptrVI);
+    Ptr<QosTxop> edcaVI = ptrVI.Get<QosTxop>();
+    edcaVI->SetMinCw(7);
+    edcaVI->SetMaxCw(15);
+    edcaVI->SetAifsn(3);
+
+    // 3. Ordinary Priority (OP) -> AC_BE (Best Effort, Tag 0)
+    PointerValue ptrBE;
+    coordMac->GetAttribute("BE_Txop", ptrBE);
+    Ptr<QosTxop> edcaBE = ptrBE.Get<QosTxop>();
+    edcaBE->SetMinCw(15);
+    edcaBE->SetMaxCw(1023);
+    edcaBE->SetAifsn(7);
+
+    // ========================================================================
     // TSN TRAFFIC CONTROL: GATE CONTROL LIST (GCL) INSTALLATION
     // ======================================================================== 
     NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
     
     TsnHelper tsnHelper;
-    tsnHelper.SetNumberOfQueues(3); // 4 Queues: CP (0), RP (1), OP (3)
+    tsnHelper.SetNumberOfQueues(3); // 3 Queues: CP (0), RP (1), OP (2)
     
-    // Set a static baseline schedule: 24ms hypercycle (6ms per gate)
-    // The RL agent will later override this using UpdateGclSchedule()
     tsnHelper.SetScheduleEqualTime(6.0, 3); 
     
-    // Install the GCL exclusively on Node 0's Wi-Fi interface (egress to LPU)
     QueueDiscContainer egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
 
+    Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
+    Simulator::Schedule(Seconds(1.0), &LogQueueSizes, gcl);
+    
     // ========================================================================
     // COORDINATOR SYNC SETUP & BINDINGS
     // ======================================================================== 
@@ -277,6 +319,14 @@ int main(int argc, char *argv[])
                                   MakeCallback(&WbanTelemetry::RecordMacDrop));
 
     Simulator::Stop(Seconds(simDuration + 1.0)); 
+    
+
+    Ptr<wban::GclQueueDisc> gclDisc = egressQdisc.Get(0)->GetObject<wban::GclQueueDisc>();
+
+    // Instantiate and start the modular RL Interface
+    wban::WbanRlInterface rlAgent;
+    rlAgent.Initialize(gclDisc);
+
     Simulator::Run();
     
     WbanTelemetry::Close();

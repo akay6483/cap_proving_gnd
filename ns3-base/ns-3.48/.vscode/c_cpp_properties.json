@@ -4,12 +4,15 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/akay/Documents/1_Projects/capstone/cap_proving_gnd/ns3-base/ns-3.48/build/include"
+                "/home/akay/Documents/1_Projects/capstone/cap_proving_gnd/ns3-base/ns-3.48/build/include/**",
+                "/home/akay/Documents/1_Projects/capstone/cap_proving_gnd/ns3-base/ns-3.48/src/**",
+                "/home/akay/Documents/1_Projects/capstone/cap_proving_gnd/ns3-base/ns-3.48/build/src/**"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "c++23",
-            "intelliSenseMode": "linux-gcc-x64"
+            "intelliSenseMode": "linux-gcc-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }
     ],
     "version": 4

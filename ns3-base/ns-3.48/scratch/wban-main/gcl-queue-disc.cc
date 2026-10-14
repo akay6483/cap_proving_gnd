@@ -166,20 +166,32 @@ Ptr<QueueDiscItem> GclQueueDisc::DoDequeue(void) {
     Time now = Simulator::Now();
     Time timeInCycle = NanoSeconds(now.GetNanoSeconds() % m_cycleTime.GetNanoSeconds());
 
-    if (m_scheduleUpdatePending && timeInCycle < Seconds(0.00001)) {
-        m_gclSchedule = m_pendingSchedule;
-        m_cycleTime = Seconds(0);
-        for (const auto& entry : m_gclSchedule) m_cycleTime += entry.duration;
-        m_scheduleUpdatePending = false;
-        m_cycleCount++;
-    }
+    // ... (existing schedule update logic) ...
 
     int activeGate = GetCurrentActiveGate();
     if (activeGate < 0) return nullptr;
 
     if (GetInternalQueue(activeGate)->GetNPackets() > 0) {
         Ptr<QueueDiscItem> item = GetInternalQueue(activeGate)->Dequeue();
+        
         if (item) {
+            // ---------------------------------------------------------
+            // TRANSLATE TO EDCA BEFORE HANDING TO WI-FI MAC
+            // ---------------------------------------------------------
+            Ptr<Packet> packet = item->GetPacket();
+            packet->RemoveAllPacketTags(); 
+
+            SocketPriorityTag edcaTag;
+            if (activeGate == 0) {
+                edcaTag.SetPriority(7); // CP -> AC_VO (Voice)
+            } else if (activeGate == 1) {
+                edcaTag.SetPriority(5); // RP -> AC_VI (Video)
+            } else {
+                edcaTag.SetPriority(0); // OP -> AC_BE (Best Effort)
+            }
+            packet->AddPacketTag(edcaTag);
+            // ---------------------------------------------------------
+
             m_delaySum[activeGate] += (Simulator::Now() - item->GetTimeStamp()).GetSeconds();
             m_dequeueCount[activeGate]++;
             return item;

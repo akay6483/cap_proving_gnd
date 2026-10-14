@@ -202,9 +202,9 @@ void WbanSensorApp::FlushAndTransmitBuffer()
         demandTag.SetDemand(remainingDemand);
         packet->AddPacketTag(demandTag); // Tags do not increase physical packet size
 
-        if (m_socket->Send(packet) >= 0) {
-            m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
-        } else {
+        m_txTrace(packet, GetNode()->GetId(), static_cast<uint32_t>(aggregateClass));
+
+        if (m_socket->Send(packet) < 0) {
             NS_LOG_ERROR("Node " << GetNode()->GetId() << " | Socket Send Failed!");
         }
         bytesToSend -= chunkSize;

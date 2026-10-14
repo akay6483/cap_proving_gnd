@@ -56,6 +56,7 @@ std::ofstream WbanTelemetry::m_txCsv;
 std::ofstream WbanTelemetry::m_hubCsv;
 std::ofstream WbanTelemetry::m_rxCsv;
 std::ofstream WbanTelemetry::m_dropCsv;
+std::ofstream WbanTelemetry::m_queueCsv;
 
 void WbanTelemetry::Initialize(const std::string& prefix) {
     m_txCsv.open(prefix + "_tx.csv");
@@ -70,6 +71,9 @@ void WbanTelemetry::Initialize(const std::string& prefix) {
 
     m_dropCsv.open(prefix + "_drops.csv");
     m_dropCsv << "Time_s,Layer,NodeID,Priority,Size_bytes\n";
+
+    m_queueCsv.open(prefix + "_queues.csv");
+    m_queueCsv << "Time_s,CP_Size,RP_Size,OP_Size\n";
 }
 
 void WbanTelemetry::Close() {
@@ -77,6 +81,7 @@ void WbanTelemetry::Close() {
     if(m_hubCsv.is_open()) m_hubCsv.close();
     if(m_rxCsv.is_open()) m_rxCsv.close();
     if(m_dropCsv.is_open()) m_dropCsv.close();
+    if(m_queueCsv.is_open()) m_queueCsv.close();
 }
 
 void WbanTelemetry::RecordSensorTx(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priority) {
@@ -153,6 +158,10 @@ void WbanTelemetry::RecordAppDrop(uint32_t nodeId, uint32_t droppedBytes, uint32
     // Logs Drop-Tail Buffer Overflows explicitly from the Application layer
     m_dropCsv << Simulator::Now().GetSeconds() << ",APP," << nodeId << "," 
               << priority << "," << droppedBytes << "\n";
+}
+
+void WbanTelemetry::RecordQueueStats(uint32_t cpSize, uint32_t rpSize, uint32_t opSize) {
+    m_queueCsv << Simulator::Now().GetSeconds() << "," << cpSize << "," << rpSize << "," << opSize << "\n";
 }
 
 } // namespace wban

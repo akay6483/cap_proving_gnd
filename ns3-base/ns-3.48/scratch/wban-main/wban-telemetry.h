@@ -58,11 +58,15 @@ public:
     static void RecordMacDrop(Ptr<const Packet> packet);
     static void RecordAppDrop(uint32_t nodeId, uint32_t droppedBytes, uint32_t priority);
 
+    // Inside WbanTelemetry class
+    static void RecordQueueStats(uint32_t cpSize, uint32_t rpSize, uint32_t opSize);
+
 private:
     static std::ofstream m_txCsv;
     static std::ofstream m_hubCsv;
     static std::ofstream m_rxCsv;
     static std::ofstream m_dropCsv;
+    static std::ofstream m_queueCsv;
 };
 
 } // namespace wban
