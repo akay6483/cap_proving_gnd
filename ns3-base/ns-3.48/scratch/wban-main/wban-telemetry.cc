@@ -18,7 +18,6 @@ TypeId WbanTelemetryHeader::GetTypeId(void) {
 
 TypeId WbanTelemetryHeader::GetInstanceTypeId(void) const { return GetTypeId(); }
 
-// 2 bytes (Node) + 4 bytes (Seq) + 1 byte (Prio) + 8 bytes (Time) = 15 bytes total
 uint32_t WbanTelemetryHeader::GetSerializedSize(void) const { return 15; } 
 
 void WbanTelemetryHeader::Serialize(Buffer::Iterator start) const {
@@ -58,12 +57,14 @@ std::ofstream WbanTelemetry::m_rxCsv;
 std::ofstream WbanTelemetry::m_dropCsv;
 std::ofstream WbanTelemetry::m_queueCsv;
 
+Ptr<GclQueueDisc> WbanTelemetry::m_gclDisc = nullptr;
+Time WbanTelemetry::m_pollInterval = Seconds(0);
+
 void WbanTelemetry::Initialize(const std::string& prefix) {
     m_txCsv.open(prefix + "_tx.csv");
     m_txCsv << "Time_s,NodeID,SeqNum,Priority,Size_bytes\n";
 
     m_hubCsv.open(prefix + "_hub.csv");
-    // Added NodeID and SeqNum to track packet lifecycle across tiers
     m_hubCsv << "Time_s,Event,NodeID,SeqNum,Priority,Size_bytes\n";
 
     m_rxCsv.open(prefix + "_lpu_rx.csv");
@@ -72,8 +73,9 @@ void WbanTelemetry::Initialize(const std::string& prefix) {
     m_dropCsv.open(prefix + "_drops.csv");
     m_dropCsv << "Time_s,Layer,NodeID,Priority,Size_bytes\n";
 
+    // EXPANDED GCL METRICS
     m_queueCsv.open(prefix + "_queues.csv");
-    m_queueCsv << "Time_s,CP_Size,RP_Size,OP_Size\n";
+    m_queueCsv << "Time_s,CP_Size,RP_Size,OP_Size,CP_Drops,RP_Drops,OP_Drops,CP_Delay,RP_Delay,OP_Delay,CP_Arrivals,RP_Arrivals,OP_Arrivals\n";
 }
 
 void WbanTelemetry::Close() {
@@ -86,8 +88,6 @@ void WbanTelemetry::Close() {
 
 void WbanTelemetry::RecordSensorTx(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priority) {
     WbanTelemetryHeader header;
-    
-    // Bounds check to prevent ns3::Buffer assertion crashes
     if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
         m_txCsv << Simulator::Now().GetSeconds() << "," << nodeId << "," << header.GetSeqNum() << "," 
                 << priority << "," << packet->GetSize() << "\n";
@@ -95,19 +95,15 @@ void WbanTelemetry::RecordSensorTx(Ptr<const Packet> packet, uint32_t nodeId, ui
 }
 
 void WbanTelemetry::RecordCoordinatorRx(Ptr<const Packet> packet, const Address& address) {
-    // Ignore physical 5-byte sync loopbacks
     if (packet->GetSize() <= 5) return;
-    
     WbanTelemetryHeader header;
     uint32_t nodeId = 0;
     uint32_t seqNum = 0;
     
-    // Extract metadata only if the packet is large enough to contain the telemetry passport
     if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
         nodeId = header.GetNodeId();
         seqNum = header.GetSeqNum();
     }
-    
     m_hubCsv << Simulator::Now().GetSeconds() << ",Rx_802.15.4," << nodeId << "," 
              << seqNum << ",N/A," << packet->GetSize() << "\n";
 }
@@ -121,14 +117,12 @@ void WbanTelemetry::RecordCoordinatorTx(Ptr<const Packet> packet, uint32_t prior
         nodeId = header.GetNodeId();
         seqNum = header.GetSeqNum();
     }
-
     m_hubCsv << Simulator::Now().GetSeconds() << ",Tx_WiFi," << nodeId << "," 
              << seqNum << "," << priority << "," << packet->GetSize() << "\n";
 }
 
 void WbanTelemetry::RecordLpuRx(Ptr<const Packet> packet, const Address& address) {
     WbanTelemetryHeader header;
-    
     if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
         double rxTime = Simulator::Now().GetSeconds();
         double txTime = Time(header.GetTxTime()).GetSeconds();
@@ -141,27 +135,48 @@ void WbanTelemetry::RecordLpuRx(Ptr<const Packet> packet, const Address& address
 void WbanTelemetry::RecordMacDrop(Ptr<const Packet> packet) {
     WbanTelemetryHeader header;
     uint32_t nodeId = 0;
-    uint32_t priority = 2; // Default to OP (2) under the 3-tier system if the header is missing
+    uint32_t priority = 2; 
     
-    // Safely peek into the MAC packet to see if it carries our specific metadata
     if (packet->GetSize() >= 15 && packet->PeekHeader(header)) {
         nodeId = header.GetNodeId();
         priority = header.GetPriority();
-        if (priority > 2) priority = 2; // Boundary defense
+        if (priority > 2) priority = 2;
     }
-    
     m_dropCsv << Simulator::Now().GetSeconds() << ",MAC," << nodeId << "," 
               << priority << "," << packet->GetSize() << "\n";
 }
 
 void WbanTelemetry::RecordAppDrop(uint32_t nodeId, uint32_t droppedBytes, uint32_t priority) {
-    // Logs Drop-Tail Buffer Overflows explicitly from the Application layer
     m_dropCsv << Simulator::Now().GetSeconds() << ",APP," << nodeId << "," 
               << priority << "," << droppedBytes << "\n";
 }
 
-void WbanTelemetry::RecordQueueStats(uint32_t cpSize, uint32_t rpSize, uint32_t opSize) {
-    m_queueCsv << Simulator::Now().GetSeconds() << "," << cpSize << "," << rpSize << "," << opSize << "\n";
+// ============================================================================
+// GCL PASSIVE POLLING ENGINE
+// ============================================================================
+void WbanTelemetry::StartGclMonitoring(Ptr<GclQueueDisc> gclDisc, Time pollInterval) {
+    m_gclDisc = gclDisc;
+    m_pollInterval = pollInterval;
+    
+    // Kick off the continuous recursive loop
+    Simulator::Schedule(m_pollInterval, &WbanTelemetry::DoPollGclStats);
+}
+
+void WbanTelemetry::DoPollGclStats() {
+    if (!m_gclDisc) return;
+    
+    // Passively read the metrics without resetting them
+    GclQueueDisc::QueueStats stats = m_gclDisc->GetQueueStats();
+
+    // Map metrics: Index 0 (CP), 1 (RP), 2 (OP)
+    m_queueCsv << Simulator::Now().GetSeconds() << "," 
+               << stats.queueSizes[0]   << "," << stats.queueSizes[1]   << "," << stats.queueSizes[2]   << ","
+               << stats.dropCount[0]    << "," << stats.dropCount[1]    << "," << stats.dropCount[2]    << ","
+               << stats.delaySum[0]     << "," << stats.delaySum[1]     << "," << stats.delaySum[2]     << ","
+               << stats.arrivalCount[0] << "," << stats.arrivalCount[1] << "," << stats.arrivalCount[2] << "\n";
+
+    // Re-schedule the next poll seamlessly
+    Simulator::Schedule(m_pollInterval, &WbanTelemetry::DoPollGclStats);
 }
 
 } // namespace wban

@@ -16,7 +16,6 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/ai-module.h"
 
-
 #include "wban-config.h"
 #include "wban-traffic-generator.h" 
 #include "wban-sensor-app.h"        
@@ -37,6 +36,15 @@ std::map<uint32_t, Ptr<LrWpanNetDevice>> g_lrwpanDevices;
 std::map<uint32_t, Ptr<WifiNetDevice>> g_backhaulDevices;   
 std::map<uint32_t, Ptr<ns3::energy::BasicEnergySource>> g_nodeBatteries; 
 
+std::string GetQosString(uint32_t priority) {
+    switch(priority) { 
+        case 0: return "CP"; 
+        case 1: return "RP"; 
+        case 2: return "OP"; 
+        default: return "UNKNOWN"; 
+    }
+}
+
 void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityClass)
 {
     WbanTelemetryHeader tHeader;
@@ -47,7 +55,7 @@ void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityC
     }
     
     NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node " << nodeId 
-                << " | Seq: " << seqNum << " | Prio: " << priorityClass 
+                << " | Seq: " << seqNum << " | Prio: " << GetQosString(priorityClass) 
                 << " | Size: " << packet->GetSize() << " bytes");
 }
 
@@ -86,27 +94,19 @@ void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
     Simulator::Schedule(Seconds(0.49152), &TriggerMapSchedule, coordBroadcastSocket, destBroadcast);
 }
 
-void LogQueueSizes(Ptr<GclQueueDisc> gclDisc) {
-    GclQueueDisc::QueueStats stats = gclDisc->GetQueueStats();
-    // Assuming queues: 0=CP, 1=RP, 2=OP based on your 3-tier setup
-    WbanTelemetry::RecordQueueStats(stats.queueSizes[0], stats.queueSizes[1], stats.queueSizes[2]);
-    
-    // Poll every 50ms
-    Simulator::Schedule(MilliSeconds(50), &LogQueueSizes, gclDisc);
-}
-
 int main(int argc, char *argv[])
 {
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
-    double simDuration = 100.0; 
+    double simDuration = 120.0; 
     
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
     LogComponentEnable("WbanCentralScheduler", LOG_LEVEL_ALL);
     LogComponentEnable("WbanCoordinatorApp", LOG_LEVEL_DEBUG);
     LogComponentEnable("LpuApp", LOG_LEVEL_ALL);
+    LogComponentEnable("GclQueueDisc", LOG_LEVEL_INFO);
     
     NodeContainer allNodes;
     allNodes.Create(WBAN_NETWORK.size());
@@ -198,9 +198,7 @@ int main(int argc, char *argv[])
     Ptr<WifiMac> coordMac = g_backhaulDevices[0]->GetMac();
     
     // 1. Critical Priority (CP) -> AC_VO (Voice, Tag 7)
-    // Most aggressive: Minimum Contention Window and AIFSN so it transmits immediately
     PointerValue ptrVO;
-    // FIX: Updated attribute names for ns-3.48 compatibility (VO_Txop instead of VO_EdcaTxopN)
     coordMac->GetAttribute("VO_Txop", ptrVO);
     Ptr<QosTxop> edcaVO = ptrVO.Get<QosTxop>();
     edcaVO->SetMinCw(3);    
@@ -231,12 +229,16 @@ int main(int argc, char *argv[])
     TsnHelper tsnHelper;
     tsnHelper.SetNumberOfQueues(3); // 3 Queues: CP (0), RP (1), OP (2)
     
-    tsnHelper.SetScheduleEqualTime(6.0, 3); 
+    // Weighted schedule prioritizing CP latency over OP latency.
+    // Over a 10ms hypercycle, CP gate is open for 5ms, RP for 3ms, OP for 2ms.
+    std::vector<double> gateWeights = {50.0, 30.0, 20.0}; 
+    tsnHelper.SetScheduleWeighted(gateWeights, 10.0);
     
     QueueDiscContainer egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
-
     Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
-    Simulator::Schedule(Seconds(1.0), &LogQueueSizes, gcl);
+
+    // Start the passive polling engine (50ms interval) via the Telemetry module
+    WbanTelemetry::StartGclMonitoring(gcl, MilliSeconds(50));
     
     // ========================================================================
     // COORDINATOR SYNC SETUP & BINDINGS
@@ -313,6 +315,7 @@ int main(int argc, char *argv[])
     // TELEMETRY & SIMULATION EXECUTION
     // ======================================================================== 
     
+    // Prepend "scratch/wban-main/" if you want the CSVs to save directly in your project folder
     WbanTelemetry::Initialize("wban_sim");
 
     Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::LrWpanNetDevice/Mac/MacTxDrop", 
@@ -320,10 +323,8 @@ int main(int argc, char *argv[])
 
     Simulator::Stop(Seconds(simDuration + 1.0)); 
     
-
     Ptr<wban::GclQueueDisc> gclDisc = egressQdisc.Get(0)->GetObject<wban::GclQueueDisc>();
 
-    // Instantiate and start the modular RL Interface
     wban::WbanRlInterface rlAgent;
     rlAgent.Initialize(gclDisc);
 

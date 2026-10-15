@@ -112,7 +112,7 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
         uint32_t nodeId = 0;
         uint32_t seqNum = 0;
         
-        // UPDATED: Strict bounds check prevents NS_ASSERT crash on 10-byte GTS Request packets
+        // Strict bounds check prevents NS_ASSERT crash on 10-byte GTS Request packets
         if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
             nodeId = tHeader.GetNodeId();
             seqNum = tHeader.GetSeqNum();
@@ -188,26 +188,32 @@ uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<Packet> packet) const
 // ============================================================================
 // PIPELINE STEP 5: TRANSMISSION
 // ============================================================================
-void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
+// ============================================================================
+// PIPELINE STEP 5: TRANSMISSION
+// ============================================================================
+void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t internalPriority)
 {
     packet->RemoveAllPacketTags();
 
+    // 1. Maintain internal WBAN state for the GclQueueDisc IP_TOS fallback
+    m_txSocketWifi->SetPriority(internalPriority); 
+    m_txSocketWifi->SetIpTos(internalPriority << 2);
+
+    // 2. Attach the internal priority tag (0, 1, or 2)
     SocketPriorityTag pTag;
-    pTag.SetPriority(priority);
+    pTag.SetPriority(internalPriority);
     packet->AddPacketTag(pTag); 
 
     int bytesSent = m_txSocketWifi->Send(packet);
 
     if (bytesSent >= 0) {
         m_bytesForwarded += bytesSent;
-        m_txTrace(packet, priority);
+        m_txTrace(packet, internalPriority);
         
-        // Peek the header again to display which exact packet is moving across the Tier-2 bridge
         WbanTelemetryHeader tHeader;
         uint32_t nodeId = 0;
         uint32_t seqNum = 0;
         
-        // UPDATED: Defensive bounds check applied to egress logging as well
         if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
             nodeId = tHeader.GetNodeId();
             seqNum = tHeader.GetSeqNum();
@@ -215,7 +221,7 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t priority)
         
         NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node 0 (Coordinator) -> LPU | Fwd Node: " 
                     << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() 
-                    << " bytes | QoS Type: " << GetQosName(priority));
+                    << " bytes | QoS Type: " << GetQosName(internalPriority));
     } else {
         NS_LOG_ERROR("Coordinator failed to forward packet via UDP.");
     }

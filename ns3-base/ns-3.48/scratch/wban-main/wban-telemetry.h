@@ -3,6 +3,7 @@
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
+#include "gcl-queue-disc.h" // Required to access GclQueueDisc and its QueueStats struct
 #include <fstream>
 #include <string>
 
@@ -54,12 +55,12 @@ public:
     // 3. Sink (LPU) Trace - For End-to-End Metrics (Delay, Jitter, Goodput)
     static void RecordLpuRx(Ptr<const Packet> packet, const Address& address);
 
-    // 4. Drop Accounting Traces (For strict Reward/Penalty computation in RL)
+    // 4. Drop Accounting Traces
     static void RecordMacDrop(Ptr<const Packet> packet);
     static void RecordAppDrop(uint32_t nodeId, uint32_t droppedBytes, uint32_t priority);
 
-    // Inside WbanTelemetry class
-    static void RecordQueueStats(uint32_t cpSize, uint32_t rpSize, uint32_t opSize);
+    // 5. GCL Passive Polling Engine
+    static void StartGclMonitoring(Ptr<GclQueueDisc> gclDisc, Time pollInterval);
 
 private:
     static std::ofstream m_txCsv;
@@ -67,6 +68,12 @@ private:
     static std::ofstream m_rxCsv;
     static std::ofstream m_dropCsv;
     static std::ofstream m_queueCsv;
+
+    // Internal Callback for the passive GCL poll
+    static void DoPollGclStats();
+    
+    static Ptr<GclQueueDisc> m_gclDisc;
+    static Time m_pollInterval;
 };
 
 } // namespace wban
