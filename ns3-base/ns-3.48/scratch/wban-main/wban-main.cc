@@ -252,12 +252,17 @@ int main(int argc, char *argv[])
     localLrWpanAddr.SetProtocol(0); 
     coordLrWpanRxSocket->Bind(localLrWpanAddr);
 
-    Ptr<Socket> coordUdpTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::UdpSocketFactory"));
-    InetSocketAddress lpuUdpAddr(lpuIpAddress, 9); 
-    coordUdpTxSocket->Connect(lpuUdpAddr);
+    // NEW FIX: Use raw packet sockets to bypass UDP tag-stripping entirely
+    Ptr<Socket> coordWifiTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
+    PacketSocketAddress lpuMacAddr;
+    lpuMacAddr.SetSingleDevice(g_backhaulDevices[0]->GetIfIndex());
+    lpuMacAddr.SetPhysicalAddress(g_backhaulDevices[1]->GetAddress()); // Node 1 (LPU) MAC
+    lpuMacAddr.SetProtocol(0);
+    coordWifiTxSocket->Connect(lpuMacAddr);
 
-    Ptr<WbanCoordinatorApp> coordApp = CreateObject<WbanCoordinatorApp>();
-    coordApp->Setup(coordLrWpanRxSocket, coordUdpTxSocket, lpuUdpAddr);
+Ptr<WbanCoordinatorApp> coordApp = CreateObject<WbanCoordinatorApp>();
+coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuMacAddr);
+
     allNodes.Get(0)->AddApplication(coordApp);
     coordApp->SetStartTime(Seconds(0.0));
     coordApp->SetStopTime(Seconds(simDuration));

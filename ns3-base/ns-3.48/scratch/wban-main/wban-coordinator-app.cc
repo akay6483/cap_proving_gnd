@@ -195,11 +195,8 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t internalPrior
 {
     packet->RemoveAllPacketTags();
 
-    // 1. Maintain internal WBAN state for the GclQueueDisc IP_TOS fallback
-    m_txSocketWifi->SetPriority(internalPriority); 
-    m_txSocketWifi->SetIpTos(internalPriority << 2);
-
-    // 2. Attach the internal priority tag (0, 1, or 2)
+    // Attach the native priority tag. 
+    // Because the socket is raw, the network stack will not strip this.
     SocketPriorityTag pTag;
     pTag.SetPriority(internalPriority);
     packet->AddPacketTag(pTag); 
@@ -223,7 +220,7 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t internalPrior
                     << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() 
                     << " bytes | QoS Type: " << GetQosName(internalPriority));
     } else {
-        NS_LOG_ERROR("Coordinator failed to forward packet via UDP.");
+        NS_LOG_ERROR("Coordinator failed to forward packet via raw Wi-Fi socket.");
     }
 }
 

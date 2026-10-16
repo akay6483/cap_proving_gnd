@@ -15,7 +15,8 @@
 #include "ns3/object-factory.h"         // ObjectFactory: used to create internal DropTailQueues dynamically
 #include "ns3/drop-tail-queue.h"        // DropTailQueue<QueueDiscItem>: the per-class FIFO buffer
 #include "ns3/simulator.h"              // Simulator::Now(): wall-clock time inside simulation
-#include "ns3/socket.h"                 // Needed for SocketPriorityTag
+#include "ns3/socket.h"
+#include "wban-telemetry.h"                 // Needed for SocketPriorityTag
 
 namespace ns3
 {
@@ -270,8 +271,7 @@ GclQueueDisc::InitializeParams(void)
 // Classifies the packet into a priority queue and enqueues it there.
 // Gate state is NOT checked here — TAS gates only affect dequeue timing.
 
-bool
-GclQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
+bool GclQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
 {
     NS_LOG_FUNCTION(this << item);
     
@@ -280,9 +280,8 @@ GclQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
 
     Ptr<Packet> packet = item->GetPacket();
     SocketPriorityTag priorityTag;
-    uint8_t tosValue = 0; // Lifted to main scope for the NS_LOG_INFO statement
     
-    // Step 1: Look for a native socket-level priority tag
+    // Because we use raw packet sockets, the tag will ALWAYS be intact
     if (packet->PeekPacketTag(priorityTag)) 
     {
         uint32_t priority = priorityTag.GetPriority();
@@ -291,24 +290,9 @@ GclQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
             queueIndex = priority; 
         }
     } 
-    // Step 2: Fallback if the tag is obscured. 
-    // Directly query the base QueueItem for the IP layer DSFIELD (TOS)
-    else 
-    {
-        if (item->GetUint8Value(QueueItem::IP_DSFIELD, tosValue))
-        {
-            // Recover the priority from the TOS bits
-            uint32_t priority = tosValue >> 2; 
-            if (priority < m_nQueues)
-            {
-                queueIndex = priority;
-            }
-        }
-    }
 
     NS_LOG_INFO("DoEnqueue | Tag Intact? " << packet->PeekPacketTag(priorityTag) 
-            << " | IP TOS: " << (int)tosValue 
-            << " | Assigned Queue: " << queueIndex);
+                << " | Assigned Queue: " << queueIndex);
 
     // Track arrivals
     m_arrivalCounts[queueIndex]++;                            
