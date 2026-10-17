@@ -12,15 +12,17 @@
 
 #include "gcl-queue-disc.h"             // own header: GclEntry, QueueStats, class declaration
 #include "ns3/log.h"                    // NS_LOG_* macros
+#include "ns3/ipv4-queue-disc-item.h"   // Ipv4QueueDiscItem: carries IP header alongside packet
+#include "ns3/ipv4-header.h"            // Ipv4Header: needed to read TOS/protocol field
+#include "ns3/udp-header.h"             // UdpHeader: needed to read destination port (port-based classification)
+#include "ns3/tcp-header.h"             // TcpHeader: same, for TCP flows
 #include "ns3/object-factory.h"         // ObjectFactory: used to create internal DropTailQueues dynamically
 #include "ns3/drop-tail-queue.h"        // DropTailQueue<QueueDiscItem>: the per-class FIFO buffer
 #include "ns3/simulator.h"              // Simulator::Now(): wall-clock time inside simulation
-#include "ns3/socket.h"
-#include "wban-telemetry.h"                 // Needed for SocketPriorityTag
 
 namespace ns3
 {
-namespace wban
+namespace wban 
 {
 
 NS_LOG_COMPONENT_DEFINE("GclQueueDisc");       // registers "GclQueueDisc" as a log component — enable with NS_LOG=GclQueueDisc
@@ -31,7 +33,7 @@ TypeId
 GclQueueDisc::GetTypeId(void)
 {
     static TypeId tid =
-        TypeId("ns3::GclQueueDisc")
+        TypeId("ns3::wban::GclQueueDisc")
             .SetParent<QueueDisc>()                         // inherits ns-3 QueueDisc interface (DoEnqueue/DoDequeue/DoPeek)
             .SetGroupName("TrafficControl")                 // groups this disc with other TC objects in documentation
             .AddConstructor<GclQueueDisc>()                 // allows creation via ObjectFactory::Create<GclQueueDisc>()
@@ -42,7 +44,7 @@ GclQueueDisc::GetTypeId(void)
                           MakeQueueSizeChecker())
             .AddAttribute("NumberOfQueues",                 // attribute: how many priority classes (1–8)
                           "The number of priority queues",
-                          UintegerValue(3),                 // default 3: CP / RP / OP
+                          UintegerValue(3),                 // default 3: CP (Alarms) / RP (Vitals) / OP (Imaging)
                           MakeUintegerAccessor(&GclQueueDisc::m_nQueues),
                           MakeUintegerChecker<uint32_t>(1, 8));
     return tid;
@@ -50,9 +52,10 @@ GclQueueDisc::GetTypeId(void)
 
 // ─── Constructor ──────────────────────────────────────────────────────────────
 GclQueueDisc::GclQueueDisc()
-    // FIX: Unlocked the queue disc to support multiple independent priority bands
-    : QueueDisc(QueueDiscSizePolicy::MULTIPLE_QUEUES), 
-      m_nQueues(3),                  // default to 3 queues (CP, RP, OP)
+    : QueueDisc(QueueDiscSizePolicy::SINGLE_INTERNAL_QUEUE), // base class counts packets across all internal queues as one pool
+      m_usePcp(true),                // DSCP/PCP classification ON by default for WBAN
+      m_usePortBased(false),         // Port-based classification OFF by default
+      m_nQueues(3),                  // Default to 3 queues
       m_cycleCount(0),               // number of completed GCL cycles (incremented on schedule swap)
       m_lastStatUpdateTime(Seconds(0)), // timestamp of last ResetStats() call
       m_scheduleUpdatePending(false) // no pending schedule swap at construction
@@ -94,6 +97,35 @@ GclQueueDisc::SetGclSchedule(std::vector<GclEntry> schedule)
     {
         NS_LOG_INFO("  Entry " << i << ": duration=" << m_gclSchedule[i].duration.GetMilliSeconds()
                                << "ms, gates=" << m_gclSchedule[i].gatesOpen.size()); // log each slot's duration and gate count
+    }
+}
+
+// ─── SetUsePcp ────────────────────────────────────────────────────────────────
+// Switches classification to DSCP/TOS field instead of destination port.
+// Mutually exclusive with port-based mode; caller should set one or the other.
+void
+GclQueueDisc::SetUsePcp(bool usePcp)
+{
+    NS_LOG_FUNCTION(this << usePcp);
+    m_usePcp = usePcp;
+
+    if (usePcp)
+    {
+        NS_LOG_INFO("Classification method: PCP/DSCP-based");
+    }
+}
+
+// ─── SetPortBasedPriority ─────────────────────────────────────────────────────
+// Enables/disables port-based classification (UDP/TCP dest port 5001+ → queue index).
+void
+GclQueueDisc::SetPortBasedPriority(bool usePort)
+{
+    NS_LOG_FUNCTION(this << usePort);
+    m_usePortBased = usePort;
+
+    if (usePort)
+    {
+        NS_LOG_INFO("Classification method: Port-based");
     }
 }
 
@@ -266,47 +298,148 @@ GclQueueDisc::InitializeParams(void)
     NS_LOG_FUNCTION(this);
 }
 
+// ─── ClassifyByPcp ────────────────────────────────────────────────────────────
+// Maps a packet's IP TOS/DSCP field to a queue index.
+// Used when m_usePcp=true. 
+int32_t
+GclQueueDisc::ClassifyByPcp(Ptr<Ipv4QueueDiscItem> ipv4Item)
+{
+    NS_LOG_FUNCTION(this);
+
+    Ipv4Header ipv4Header = ipv4Item->GetHeader();
+    uint8_t tos  = ipv4Header.GetTos();  // full TOS byte from IP header
+    uint8_t dscp = tos >> 2;             // DSCP = top 6 bits of TOS (shift out 2-bit ECN field)
+
+    int32_t queueIndex;
+
+    if (m_nQueues == 8)
+    {
+        // Full IEEE 802.1Q 8-priority mapping: use top 3 bits of DSCP (range 0–7)
+        queueIndex = (dscp >> 3);          // DSCP[5:3] → priority 0–7
+        if (queueIndex >= 8) queueIndex = 7; // clamp to highest queue
+    }
+    else if (m_nQueues == 3)
+    {
+        // Simplified 3-class mapping matching the DynaTAS/WBAN traffic profile
+        if (dscp >= 48)
+        {
+            queueIndex = 0; // DSCP ≥ 48 (EF/CS6/CS7) → Q0 = CP / Alarms (highest priority)
+        }
+        else if (dscp >= 32)
+        {
+            queueIndex = 1; // DSCP 32–47 (AF4x/CS4/CS5) → Q1 = RP / Vitals (medium)
+        }
+        else
+        {
+            queueIndex = 2; // DSCP < 32 → Q2 = OP / Imaging (lowest priority)
+        }
+    }
+    else
+    {
+        // Generic linear mapping for arbitrary queue counts
+        queueIndex = (dscp * m_nQueues) / 64;                  // scale DSCP [0,63] → [0, m_nQueues-1]
+        if (queueIndex >= (int32_t)m_nQueues) queueIndex = m_nQueues - 1; // clamp
+    }
+
+    NS_LOG_DEBUG("Packet DSCP=" << (int)dscp << " -> Queue " << queueIndex);
+    return queueIndex;
+}
+
+// ─── ClassifyByPort ───────────────────────────────────────────────────────────
+// Maps a packet's UDP/TCP destination port to a queue index.
+// Port 5001 → Q0 (Alarms), 5002 → Q1 (Vitals), 5003 → Q2 (Imaging).
+// Returns -1 if the port is outside the expected range (packet falls to default queue).
+int32_t
+GclQueueDisc::ClassifyByPort(Ptr<Ipv4QueueDiscItem> ipv4Item)
+{
+    NS_LOG_FUNCTION(this);
+
+    Ipv4Header ipv4Header = ipv4Item->GetHeader();
+    uint8_t protocol = ipv4Header.GetProtocol(); // 17 = UDP, 6 = TCP
+
+    if (protocol == 17) // UDP
+    {
+        Ptr<Packet> packet = ipv4Item->GetPacket()->Copy(); // copy so PeekHeader doesn't consume bytes
+        UdpHeader udpHeader;
+        packet->PeekHeader(udpHeader);                      // non-destructive read of UDP header
+        uint16_t destPort = udpHeader.GetDestinationPort();
+
+        if (destPort >= 5001 && destPort < 5001 + m_nQueues) // port within the configured range
+        {
+            int32_t queueIndex = destPort - 5001;            // 5001→0, 5002→1, 5003→2
+            NS_LOG_DEBUG("UDP port " << destPort << " -> Queue " << queueIndex);
+            return queueIndex;
+        }
+    }
+    else if (protocol == 6) // TCP
+    {
+        Ptr<Packet> packet = ipv4Item->GetPacket()->Copy();
+        TcpHeader tcpHeader;
+        packet->PeekHeader(tcpHeader);
+        uint16_t destPort = tcpHeader.GetDestinationPort();
+
+        if (destPort >= 5001 && destPort < 5001 + m_nQueues)
+        {
+            int32_t queueIndex = destPort - 5001;
+            NS_LOG_DEBUG("TCP port " << destPort << " -> Queue " << queueIndex);
+            return queueIndex;
+        }
+    }
+
+    NS_LOG_DEBUG("Packet not classified by port"); // non-UDP/TCP or out-of-range port
+    return -1; // caller will fall back to the lowest-priority queue
+}
+
 // ─── DoEnqueue ────────────────────────────────────────────────────────────────
 // Called by ns-3 whenever a packet arrives at this disc from the network layer.
 // Classifies the packet into a priority queue and enqueues it there.
 // Gate state is NOT checked here — TAS gates only affect dequeue timing.
-
-bool GclQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
+bool
+GclQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
 {
     NS_LOG_FUNCTION(this << item);
-    
-    // Default fallback to Ordinary Priority (OP = 2)
-    int32_t queueIndex = m_nQueues - 1; 
 
-    Ptr<Packet> packet = item->GetPacket();
-    SocketPriorityTag priorityTag;
-    
-    // Because we use raw packet sockets, the tag will ALWAYS be intact
-    if (packet->PeekPacketTag(priorityTag)) 
+    Ptr<Ipv4QueueDiscItem> ipv4Item = DynamicCast<Ipv4QueueDiscItem>(item); // cast to access IP header
+
+    int32_t queueIndex = -1; // -1 means unclassified
+
+    if (ipv4Item)
     {
-        uint32_t priority = priorityTag.GetPriority();
-        if (priority < m_nQueues) 
+        if (m_usePcp)
         {
-            queueIndex = priority; 
+            queueIndex = ClassifyByPcp(ipv4Item);      // DSCP-based classification
         }
-    } 
+        else if (m_usePortBased)
+        {
+            queueIndex = ClassifyByPort(ipv4Item);     // port-based classification
+        }
+    }
+    else
+    {
+        NS_LOG_WARN("Item is not an Ipv4QueueDiscItem"); // non-IP packet — will hit default queue
+    }
 
-    NS_LOG_INFO("DoEnqueue | Tag Intact? " << packet->PeekPacketTag(priorityTag) 
-                << " | Assigned Queue: " << queueIndex);
+    // Default to lowest priority queue if not classified
+    if (queueIndex < 0 || queueIndex >= (int32_t)GetNInternalQueues())
+    {
+        queueIndex = GetNInternalQueues() - 1; // Q2 = OP = lowest priority fallback
+        NS_LOG_DEBUG("Packet not classified, using default queue " << queueIndex);
+    }
 
     // Track arrivals
-    m_arrivalCounts[queueIndex]++;                            
-    item->SetTimeStamp(Simulator::Now());                     
+    m_arrivalCounts[queueIndex]++;                             // increment for the RL observation interval
 
-    bool retval = GetInternalQueue(queueIndex)->Enqueue(item); 
+    item->SetTimeStamp(Simulator::Now());                     // stamp enqueue time so DoDequeue can measure HOL waiting
+
+    bool retval = GetInternalQueue(queueIndex)->Enqueue(item); // try to push into the DropTailQueue
 
     if (!retval)
     {
         NS_LOG_WARN("Queue " << queueIndex << " is full, dropping packet");
-        m_dropCounts[queueIndex]++;                            
+        m_dropCounts[queueIndex]++;                            // record drop for RL observation
     }
 
-    return retval; 
+    return retval; // true = enqueued, false = dropped
 }
 
 // ─── GetCurrentActiveGate ─────────────────────────────────────────────────────
@@ -394,18 +527,6 @@ GclQueueDisc::DoDequeue(void)
         Ptr<QueueDiscItem> item = GetInternalQueue(activeGate)->Dequeue(); // pop head packet
         if (item)
         {
-            // EDCA Hardware Translation: Strips the WBAN internal tag and replaces it with 
-            // 802.11n EDCA MAC priorities (7, 5, 0) before handing to the Wi-Fi radio.
-            Ptr<Packet> packet = item->GetPacket();
-            packet->RemoveAllPacketTags(); 
-
-            SocketPriorityTag edcaTag;
-            if (activeGate == 0) edcaTag.SetPriority(7);      // CP -> AC_VO
-            else if (activeGate == 1) edcaTag.SetPriority(5); // RP -> AC_VI 
-            else edcaTag.SetPriority(0);                      // OP -> AC_BE
-            
-            packet->AddPacketTag(edcaTag);
-
             // Head-of-line waiting time: how long this packet sat queued before its gate opened.
             // Accumulated per queue so the RL env can compute priority-weighted mean delay.
             m_delaySum[activeGate] += (Simulator::Now() - item->GetTimeStamp()).GetSeconds();
@@ -437,5 +558,5 @@ GclQueueDisc::DoPeek(void)
     return nullptr; // gate closed or queue empty
 }
 
-} //namespace wban
+} // namespace wban
 } // namespace ns3

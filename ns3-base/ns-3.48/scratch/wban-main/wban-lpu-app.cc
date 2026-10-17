@@ -8,14 +8,12 @@
 #include "ns3/inet-socket-address.h"
 
 namespace ns3 {
-using namespace wban;
+namespace wban {
 
 NS_LOG_COMPONENT_DEFINE ("LpuApp");
-
 NS_OBJECT_ENSURE_REGISTERED (LpuApp);
 
-std::string GetQosName(uint32_t priority) {
-    // Updated to the 3-Tier QoS Architecture
+static std::string GetQosName(uint32_t priority) {
     switch(priority) { 
         case 0: return "CP"; 
         case 1: return "RP"; 
@@ -24,10 +22,9 @@ std::string GetQosName(uint32_t priority) {
     }
 }
 
-TypeId 
-LpuApp::GetTypeId (void)
+TypeId LpuApp::GetTypeId (void)
 {
-    static TypeId tid = TypeId ("ns3::LpuApp")
+    static TypeId tid = TypeId ("ns3::wban::LpuApp")
         .SetParent<Application> ()
         .SetGroupName ("Applications")
         .AddConstructor<LpuApp> ()
@@ -67,14 +64,12 @@ LpuApp::~LpuApp ()
     m_socket = nullptr;
 }
 
-void 
-LpuApp::Setup (uint16_t port)
+void LpuApp::Setup (uint16_t port)
 {
     m_port = port;
 }
 
-void 
-LpuApp::StartApplication (void)
+void LpuApp::StartApplication (void)
 {
     NS_LOG_FUNCTION (this);
 
@@ -86,15 +81,15 @@ LpuApp::StartApplication (void)
         InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
         if (m_socket->Bind (local) == -1)
         {
-            NS_FATAL_ERROR ("Failed to bind socket");
+            NS_FATAL_ERROR ("Failed to bind UDP socket on LPU");
         }
     }
 
     m_socket->SetRecvCallback (MakeCallback (&LpuApp::HandleRead, this));
+    NS_LOG_INFO("LPU App started. Listening on UDP port " << m_port);
 }
 
-void 
-LpuApp::StopApplication (void)
+void LpuApp::StopApplication (void)
 {
     NS_LOG_FUNCTION (this);
 
@@ -125,15 +120,12 @@ void LpuApp::HandleRead (Ptr<Socket> socket)
         }
         m_lastRxTime = now;
         
-        // Fire telemetry hook before stripping the header
         m_rxTrace (packet, from);
 
-        uint32_t priority = 2; // Default fallback to OP
+        uint32_t priority = 2; 
         uint32_t nodeId = 0;
         uint32_t seqNum = 0;
         
-        // FIX: Strict bounds check prevents ns3::Buffer assertion crash 
-        // when tiny Wi-Fi background packets (like ARP) hit the socket.
         if (packet->GetSize() >= 15) {
             WbanTelemetryHeader header;
             if (packet->RemoveHeader(header) > 0) {
@@ -141,10 +133,8 @@ void LpuApp::HandleRead (Ptr<Socket> socket)
                 nodeId = header.GetNodeId();
                 seqNum = header.GetSeqNum();
                 
-                // Hard-cap priority at 2 (OP) to protect the parser
                 if (priority > 2) priority = 2;
 
-                // Calculate and trace exact End-to-End Delay
                 Time txTime = Time(header.GetTxTime());
                 Time delay = now - txTime;
                 m_delayTrace(delay);
@@ -153,18 +143,16 @@ void LpuApp::HandleRead (Ptr<Socket> socket)
 
         ProcessPayload (packet);
 
-        // UPDATED: Terminal log now outputs Node and Seq for granular lifecycle tracking
-        NS_LOG_INFO ("[T=" << now.GetSeconds() << "s] Rx | LPU (Node 1) Received Packet " 
+        NS_LOG_INFO ("[T=" << now.GetSeconds() << "s] Rx | LPU Received Packet " 
                      << m_totalRxPackets << " | Node: " << nodeId << " | Seq: " << seqNum 
                      << " | Size: " << packet->GetSize () << " bytes | QoS Type: " << GetQosName(priority));
     }
 }
 
-void 
-LpuApp::ProcessPayload (Ptr<Packet> packet)
+void LpuApp::ProcessPayload (Ptr<Packet> packet)
 {
-    // Packets are destroyed naturally as they fall out of scope, simulating consumption.
     NS_LOG_FUNCTION (this << packet);
 }
 
+} // namespace wban
 } // namespace ns3

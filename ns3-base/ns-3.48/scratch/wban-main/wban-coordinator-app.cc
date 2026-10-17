@@ -11,8 +11,7 @@ namespace wban {
 
 NS_LOG_COMPONENT_DEFINE("WbanCoordinatorApp");
 
-std::string GetQosName(uint32_t priority) {
-    // Updated to the 3-Tier QoS Architecture
+static std::string GetQosName(uint32_t priority) {
     switch(priority) { 
         case 0: return "CP"; 
         case 1: return "RP"; 
@@ -54,12 +53,12 @@ WbanCoordinatorApp::~WbanCoordinatorApp()
     m_txSocketWifi = nullptr;
 }
 
-void WbanCoordinatorApp::Setup(Ptr<Socket> rxSocketLrWpan, Ptr<Socket> txSocketWifi, Address lpuWifiMac)
+void WbanCoordinatorApp::Setup(Ptr<Socket> rxSocketLrWpan, Ptr<Socket> txSocketWifi, Address destAddress)
 {
-    NS_LOG_FUNCTION(this << rxSocketLrWpan << txSocketWifi << lpuWifiMac);
+    NS_LOG_FUNCTION(this << rxSocketLrWpan << txSocketWifi << destAddress);
     m_rxSocketLrWpan = rxSocketLrWpan;
     m_txSocketWifi = txSocketWifi;
-    m_lpuWifiMac = lpuWifiMac;
+    m_destAddress = destAddress;
 }
 
 uint32_t WbanCoordinatorApp::GetTotalBytesReceived() const { return m_bytesReceived; }
@@ -73,7 +72,7 @@ void WbanCoordinatorApp::StartApplication(void)
         m_rxSocketLrWpan->SetRecvCallback(MakeCallback(&WbanCoordinatorApp::ReceivePacket, this));
     }
     
-    NS_LOG_INFO("WbanCoordinatorApp started. Listening on 802.15.4 and ready to forward to Wi-Fi.");
+    NS_LOG_INFO("WbanCoordinatorApp started. Listening on 802.15.4 and ready to forward to Wi-Fi over IPv4.");
 }
 
 void WbanCoordinatorApp::StopApplication(void)
@@ -89,9 +88,6 @@ void WbanCoordinatorApp::StopApplication(void)
     }
 }
 
-// ============================================================================
-// PIPELINE STEP 0: INGRESS
-// ============================================================================
 void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
 {
     Ptr<Packet> packet;
@@ -99,7 +95,6 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
 
     while ((packet = socket->RecvFrom(senderAddress))) {
         
-        // Pipeline Step 1: Ingress Filtering
         if (IsSyncBeacon(packet)) {
             continue; 
         }
@@ -107,12 +102,10 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
         m_bytesReceived += packet->GetSize();
         m_rxTrace(packet, senderAddress);
 
-        // Peek the tracking header purely for clean terminal logging
         WbanTelemetryHeader tHeader;
         uint32_t nodeId = 0;
         uint32_t seqNum = 0;
         
-        // Strict bounds check prevents NS_ASSERT crash on 10-byte GTS Request packets
         if (packet->GetSize() >= 15 && packet->PeekHeader(tHeader)) {
             nodeId = tHeader.GetNodeId();
             seqNum = tHeader.GetSeqNum();
@@ -121,34 +114,22 @@ void WbanCoordinatorApp::ReceivePacket(Ptr<Socket> socket)
         NS_LOG_DEBUG("[T=" << Simulator::Now().GetSeconds() << "s] Coordinator Rx | Node: " 
                      << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() << " bytes");
 
-        // Pipeline Step 2 & 3: Metadata Extraction & Dispatching
         ProcessDemandTags(packet);
 
-        // Ingress Filtering (GTS Requests)
-        // 10-byte packets are dropped here, preventing them from hitting the Wi-Fi backhaul
         if (packet->GetSize() == 10) {
             continue;
         }
 
-        // Pipeline Step 4: Egress Preparation
         uint32_t priority = ExtractPriority(packet);
-
-        // Pipeline Step 5: Transmission
         ForwardToLpu(packet, priority);
     }
 }
 
-// ============================================================================
-// PIPELINE STEP 1: FILTERING
-// ============================================================================
 bool WbanCoordinatorApp::IsSyncBeacon(Ptr<const Packet> packet) const
 {
     return (packet->GetSize() == 5);
 }
 
-// ============================================================================
-// PIPELINE STEP 2 & 3: METADATA EXTRACTION & DISPATCHING
-// ============================================================================
 void WbanCoordinatorApp::ProcessDemandTags(Ptr<const Packet> packet)
 {
     WbanDemandTag demandTag;
@@ -160,46 +141,42 @@ void WbanCoordinatorApp::ProcessDemandTags(Ptr<const Packet> packet)
     }
 }
 
-// ============================================================================
-// PIPELINE STEP 4: EGRESS PREPARATION
-// ============================================================================
 uint32_t WbanCoordinatorApp::ExtractPriority(Ptr<Packet> packet) const
 {
-    // Defensive Memory Bounds Check
     if (packet->GetSize() < 15) {
-        return 2; // Default to OP (2) under the new 3-tier system
+        return 2; 
     }
 
     WbanTelemetryHeader header;
-    
     if (packet->PeekHeader(header)) {
         uint32_t priority = header.GetPriority();
-        
-        // Hard-cap priority at 2 (OP) to protect the downstream WiFi QoS queues
         if (priority > 2) {
             return 2; 
         }
         return priority;
     }
     
-    return 2; // Default fallback to OP (2)
+    return 2; 
 }
 
-// ============================================================================
-// PIPELINE STEP 5: TRANSMISSION
-// ============================================================================
-// ============================================================================
-// PIPELINE STEP 5: TRANSMISSION
-// ============================================================================
 void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t internalPriority)
 {
     packet->RemoveAllPacketTags();
 
-    // Attach the native priority tag. 
-    // Because the socket is raw, the network stack will not strip this.
-    SocketPriorityTag pTag;
-    pTag.SetPriority(internalPriority);
-    packet->AddPacketTag(pTag); 
+    // 1. Map 3-Tier Priority to standard IPv4 DSCP values
+    // Priority 0 (CP) -> DSCP 48 (EF / CS6)
+    // Priority 1 (RP) -> DSCP 32 (AF41 / CS4)
+    // Priority 2 (OP) -> DSCP 0  (Best Effort)
+    uint8_t dscp = (internalPriority == 0) ? 48 : (internalPriority == 1) ? 32 : 0;
+    
+    // 2. Shift DSCP by 2 bits to form the 8-bit Type of Service (ToS) byte
+    uint8_t tos = dscp << 2;
+
+    // 3. Attach standard ns-3 IP ToS tag. The UDP socket will stamp the IP header 
+    // with this value, allowing the GclQueueDisc to natively classify it.
+    SocketIpTosTag tosTag;
+    tosTag.SetTos(tos);
+    packet->AddPacketTag(tosTag); 
 
     int bytesSent = m_txSocketWifi->Send(packet);
 
@@ -216,11 +193,11 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t internalPrior
             seqNum = tHeader.GetSeqNum();
         }
         
-        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Node 0 (Coordinator) -> LPU | Fwd Node: " 
-                    << nodeId << " | Seq: " << seqNum << " | Size: " << packet->GetSize() 
-                    << " bytes | QoS Type: " << GetQosName(internalPriority));
+        NS_LOG_INFO("[T=" << Simulator::Now().GetSeconds() << "s] Tx | Coordinator -> LPU | Fwd Node: " 
+                    << nodeId << " | Seq: " << seqNum << " | DSCP: " << (uint32_t)dscp 
+                    << " | QoS Type: " << GetQosName(internalPriority));
     } else {
-        NS_LOG_ERROR("Coordinator failed to forward packet via raw Wi-Fi socket.");
+        NS_LOG_ERROR("Coordinator failed to forward packet via UDP socket.");
     }
 }
 

@@ -47,6 +47,7 @@ std::string GetQosString(uint32_t priority) {
 
 void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityClass)
 {
+    // Extracts the 15-byte tracking header to log transmission lifecycle without IP dependencies[cite: 33]
     WbanTelemetryHeader tHeader;
     uint32_t seqNum = 0;
     
@@ -160,7 +161,7 @@ int main(int argc, char *argv[])
     YansWifiPhyHelper wifiPhy;
     wifiPhy.SetChannel(YansWifiChannelHelper::Default().Create());
     WifiMacHelper wifiMac;
-    wifiMac.SetType("ns3::AdhocWifiMac");
+    wifiMac.SetType("ns3::AdhocWifiMac"); // QoS is enabled by default on 802.11n Adhoc mode
 
     NetDeviceContainer wifiDevices;
     wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(0))); 
@@ -168,7 +169,8 @@ int main(int argc, char *argv[])
     g_backhaulDevices[0] = DynamicCast<WifiNetDevice>(wifiDevices.Get(0));
     g_backhaulDevices[1] = DynamicCast<WifiNetDevice>(wifiDevices.Get(1));
 
-    wifiPhy.EnablePcap("wban-wifi-coordinator", wifiDevices.Get(0));
+    // Restore PCAP logging for all Wi-Fi interfaces to monitor WMM and DSCP tags
+    wifiPhy.EnablePcapAll("wban-edca-monitor");
 
     BasicEnergySourceHelper basicSourceHelper;
     for (const auto& config : WBAN_NETWORK)
@@ -178,6 +180,7 @@ int main(int argc, char *argv[])
         g_nodeBatteries[config.nodeId] = nodeSource.Get(0)->GetObject<ns3::energy::BasicEnergySource>();
     }
 
+    // Install standard IPv4 routing to support DSCP packet headers
     InternetStackHelper internet;
     internet.SetIpv6StackInstall(false); 
     internet.Install(allNodes.Get(0)); 
@@ -192,36 +195,6 @@ int main(int argc, char *argv[])
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // ========================================================================
-    // WI-FI EDCA QoS AGGRESSIVE TUNING (Medical Tier-2 Link)
-    // ======================================================================== 
-    NS_LOG_INFO("Configuring aggressive Wi-Fi EDCA queues for Coordinator.");
-    Ptr<WifiMac> coordMac = g_backhaulDevices[0]->GetMac();
-    
-    // 1. Critical Priority (CP) -> AC_VO (Voice, Tag 7)
-    PointerValue ptrVO;
-    coordMac->GetAttribute("VO_Txop", ptrVO);
-    Ptr<QosTxop> edcaVO = ptrVO.Get<QosTxop>();
-    edcaVO->SetMinCw(3);    
-    edcaVO->SetMaxCw(7);    
-    edcaVO->SetAifsn(2);    
-
-    // 2. Reliable Priority (RP) -> AC_VI (Video, Tag 5)
-    PointerValue ptrVI;
-    coordMac->GetAttribute("VI_Txop", ptrVI);
-    Ptr<QosTxop> edcaVI = ptrVI.Get<QosTxop>();
-    edcaVI->SetMinCw(7);
-    edcaVI->SetMaxCw(15);
-    edcaVI->SetAifsn(3);
-
-    // 3. Ordinary Priority (OP) -> AC_BE (Best Effort, Tag 0)
-    PointerValue ptrBE;
-    coordMac->GetAttribute("BE_Txop", ptrBE);
-    Ptr<QosTxop> edcaBE = ptrBE.Get<QosTxop>();
-    edcaBE->SetMinCw(15);
-    edcaBE->SetMaxCw(1023);
-    edcaBE->SetAifsn(7);
-
-    // ========================================================================
     // TSN TRAFFIC CONTROL: GATE CONTROL LIST (GCL) INSTALLATION
     // ======================================================================== 
     NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
@@ -229,15 +202,17 @@ int main(int argc, char *argv[])
     TsnHelper tsnHelper;
     tsnHelper.SetNumberOfQueues(3); // 3 Queues: CP (0), RP (1), OP (2)
     
+    // Switch classification from destination port to PCP/DSCP ToS byte mapping
+    tsnHelper.SetClassificationMethod(TsnHelper::PCP_BASED);
+    
     // Weighted schedule prioritizing CP latency over OP latency.
-    // Over a 10ms hypercycle, CP gate is open for 5ms, RP for 3ms, OP for 2ms.
     std::vector<double> gateWeights = {50.0, 30.0, 20.0}; 
     tsnHelper.SetScheduleWeighted(gateWeights, 10.0);
     
     QueueDiscContainer egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
     Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
 
-    // Start the passive polling engine (50ms interval) via the Telemetry module
+    // Start the passive polling engine via the Telemetry module
     WbanTelemetry::StartGclMonitoring(gcl, MilliSeconds(50));
     
     // ========================================================================
@@ -246,22 +221,20 @@ int main(int argc, char *argv[])
     
     Address coordMacAddress = Mac16Address("ff:ff");
 
+    // L2 Socket for receiving 802.15.4 WBAN frames
     Ptr<Socket> coordLrWpanRxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
     PacketSocketAddress localLrWpanAddr;
     localLrWpanAddr.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
     localLrWpanAddr.SetProtocol(0); 
     coordLrWpanRxSocket->Bind(localLrWpanAddr);
 
-    // NEW FIX: Use raw packet sockets to bypass UDP tag-stripping entirely
-    Ptr<Socket> coordWifiTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
-    PacketSocketAddress lpuMacAddr;
-    lpuMacAddr.SetSingleDevice(g_backhaulDevices[0]->GetIfIndex());
-    lpuMacAddr.SetPhysicalAddress(g_backhaulDevices[1]->GetAddress()); // Node 1 (LPU) MAC
-    lpuMacAddr.SetProtocol(0);
-    coordWifiTxSocket->Connect(lpuMacAddr);
+    // L3 Socket (IPv4/UDP) for forwarding to LPU, enabling DSCP insertion
+    Ptr<Socket> coordWifiTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::UdpSocketFactory"));
+    InetSocketAddress lpuInetAddr(lpuIpAddress, 9); 
+    coordWifiTxSocket->Connect(lpuInetAddr);
 
-Ptr<WbanCoordinatorApp> coordApp = CreateObject<WbanCoordinatorApp>();
-coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuMacAddr);
+    Ptr<WbanCoordinatorApp> coordApp = CreateObject<WbanCoordinatorApp>();
+    coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuInetAddr);
 
     allNodes.Get(0)->AddApplication(coordApp);
     coordApp->SetStartTime(Seconds(0.0));
@@ -271,8 +244,11 @@ coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuMacAddr);
     coordApp->TraceConnectWithoutContext("RxFromSensor", MakeCallback(&WbanTelemetry::RecordCoordinatorRx));
     coordApp->TraceConnectWithoutContext("TxToLpu", MakeCallback(&WbanTelemetry::RecordCoordinatorTx));
 
+    // ========================================================================
+    // LPU SINK CONFIGURATION
+    // ========================================================================
     Ptr<LpuApp> lpuApp = CreateObject<LpuApp>();
-    lpuApp->Setup(9); 
+    lpuApp->Setup(9); // Listen on UDP port 9
     allNodes.Get(1)->AddApplication(lpuApp);
     lpuApp->SetStartTime(Seconds(0.0));
     lpuApp->SetStopTime(Seconds(simDuration));
@@ -320,7 +296,6 @@ coordApp->Setup(coordLrWpanRxSocket, coordWifiTxSocket, lpuMacAddr);
     // TELEMETRY & SIMULATION EXECUTION
     // ======================================================================== 
     
-    // Prepend "scratch/wban-main/" if you want the CSVs to save directly in your project folder
     WbanTelemetry::Initialize("wban_sim");
 
     Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::LrWpanNetDevice/Mac/MacTxDrop", 

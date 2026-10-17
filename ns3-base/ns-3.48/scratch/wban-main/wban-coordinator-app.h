@@ -11,12 +11,12 @@ namespace ns3 {
 namespace wban {
 
 /**
- * \brief Layer 2.5 Bridge Application for the WBAN Coordinator.
+ * \brief Layer 3 Bridge Application for the WBAN Coordinator.
  * 
  * This application listens on the 802.15.4 interface, extracts TDMA demand 
  * telemetry for the central scheduler, and forwards the payload to the LPU 
- * over the Wi-Fi interface. It ensures QoS tags are preserved so the 
- * downstream Traffic Control Layer (TasQueueDisc) can shape the traffic.
+ * over an IPv4 UDP socket. It translates internal priorities into standard 
+ * IPv4 DSCP/ToS tags so the downstream GclQueueDisc can classify the traffic.
  */
 class WbanCoordinatorApp : public Application {
 public:
@@ -28,10 +28,10 @@ public:
     /**
      * \brief Injects the required network dependencies.
      * \param rxSocketLrWpan Socket bound to the 802.15.4 NetDevice.
-     * \param txSocketWifi Socket bound to the Wi-Fi NetDevice.
-     * \param lpuWifiMac The physical MAC address of the destination LPU.
+     * \param txSocketWifi UDP Socket bound to the Wi-Fi NetDevice.
+     * \param destAddress The destination IPv4 address of the LPU.
      */
-    void Setup(Ptr<Socket> rxSocketLrWpan, Ptr<Socket> txSocketWifi, Address lpuWifiMac);
+    void Setup(Ptr<Socket> rxSocketLrWpan, Ptr<Socket> txSocketWifi, Address destAddress);
 
     // --- RL Agent / Statistics Observation Surface ---
     uint32_t GetTotalBytesReceived() const;
@@ -47,36 +47,17 @@ private:
     // THE PACKET PROCESSING PIPELINE
     // ========================================================================
     
-    /**
-     * \brief Main socket receive callback. Triggers the pipeline below.
-     */
     void ReceivePacket(Ptr<Socket> socket);
-
-    /**
-     * \brief Step 1: Ingress Filtering. 
-     * Identifies if the packet is a loopback 5-byte sync beacon.
-     */
     bool IsSyncBeacon(Ptr<const Packet> packet) const;
-
-    /**
-     * \brief Step 2 & 3: Metadata Extraction & Cross-Module Signaling.
-     * Looks for WbanDemandTag and updates the WbanCentralScheduler.
-     */
     void ProcessDemandTags(Ptr<const Packet> packet);
-
-    /**
-     * \brief Step 4: Egress Preparation.
-     * Reads the QoS priority safely from the WbanTelemetryHeader without stripping it.
-     */
     uint32_t ExtractPriority(Ptr<Packet> packet) const;
 
     /**
      * \brief Step 5: Transmission.
-     * Attaches the necessary priority tags for the Traffic Control Layer
-     * and pushes the packet into the Wi-Fi socket.
+     * Translates internal QoS to IPv4 DSCP and attaches a SocketIpTosTag 
+     * before pushing the packet into the UDP socket.
      */
     void ForwardToLpu(Ptr<Packet> packet, uint32_t priority);
-
 
     // ========================================================================
     // INTERNAL STATE & DEPENDENCIES
@@ -84,17 +65,14 @@ private:
     
     Ptr<Socket> m_rxSocketLrWpan;
     Ptr<Socket> m_txSocketWifi;
-    Address m_lpuWifiMac;
+    Address m_destAddress;
 
-    // Basic telemetry counters (useful for RL state space later)
     uint32_t m_bytesReceived;
     uint32_t m_bytesForwarded;
 
     // --- Trace Sources ---
-    // Allows main script to hook into these events without modifying this file
     TracedCallback<Ptr<const Packet>, const Address&> m_rxTrace;
     TracedCallback<Ptr<const Packet>, uint32_t> m_txTrace;
-    
 };
 
 } // namespace wban

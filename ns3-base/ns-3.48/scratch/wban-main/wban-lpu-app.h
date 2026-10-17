@@ -9,7 +9,15 @@
 #include "ns3/nstime.h"
 
 namespace ns3 {
+namespace wban {
 
+/**
+ * \brief Layer 3 Sink Application for the Local Processing Unit (LPU).
+ * 
+ * Binds a standard UDP socket to receive IPv4 traffic originating from 
+ * the Coordinator. Strips the internal WBAN telemetry header to calculate 
+ * absolute end-to-end network metrics.
+ */
 class LpuApp : public Application 
 {
 public:
@@ -41,6 +49,7 @@ private:
     TracedCallback<Time> m_jitterTrace;
 };
 
+} // namespace wban
 } // namespace ns3
 
 #endif /* WBAN_LPU_APP_H */
