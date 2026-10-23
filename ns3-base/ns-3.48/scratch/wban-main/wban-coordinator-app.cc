@@ -164,19 +164,14 @@ void WbanCoordinatorApp::ForwardToLpu(Ptr<Packet> packet, uint32_t internalPrior
     packet->RemoveAllPacketTags();
 
     // 1. Map 3-Tier Priority to standard IPv4 DSCP values
-    // Priority 0 (CP) -> DSCP 48 (EF / CS6)
-    // Priority 1 (RP) -> DSCP 32 (AF41 / CS4)
-    // Priority 2 (OP) -> DSCP 0  (Best Effort)
     uint8_t dscp = (internalPriority == 0) ? 48 : (internalPriority == 1) ? 32 : 0;
     
     // 2. Shift DSCP by 2 bits to form the 8-bit Type of Service (ToS) byte
     uint8_t tos = dscp << 2;
 
-    // 3. Attach standard ns-3 IP ToS tag. The UDP socket will stamp the IP header 
-    // with this value, allowing the GclQueueDisc to natively classify it.
-    SocketIpTosTag tosTag;
-    tosTag.SetTos(tos);
-    packet->AddPacketTag(tosTag); 
+    // THE FIX: Directly update the UDP Socket's internal state.
+    // The socket will inherently stamp the next outgoing IPv4 header with this ToS.
+    m_txSocketWifi->SetIpTos(tos); 
 
     int bytesSent = m_txSocketWifi->Send(packet);
 

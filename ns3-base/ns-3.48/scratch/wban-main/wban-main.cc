@@ -47,7 +47,6 @@ std::string GetQosString(uint32_t priority) {
 
 void SensorTxTrace(Ptr<const Packet> packet, uint32_t nodeId, uint32_t priorityClass)
 {
-    // Extracts the 15-byte tracking header to log transmission lifecycle without IP dependencies[cite: 33]
     WbanTelemetryHeader tHeader;
     uint32_t seqNum = 0;
     
@@ -100,7 +99,7 @@ int main(int argc, char *argv[])
     CommandLine cmd(__FILE__);
     cmd.Parse(argc, argv);
 
-    double simDuration = 120.0; 
+    double simDuration = 300.0; 
     
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
@@ -161,7 +160,7 @@ int main(int argc, char *argv[])
     YansWifiPhyHelper wifiPhy;
     wifiPhy.SetChannel(YansWifiChannelHelper::Default().Create());
     WifiMacHelper wifiMac;
-    wifiMac.SetType("ns3::AdhocWifiMac"); // QoS is enabled by default on 802.11n Adhoc mode
+    wifiMac.SetType("ns3::AdhocWifiMac"); 
 
     NetDeviceContainer wifiDevices;
     wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, allNodes.Get(0))); 
@@ -169,8 +168,7 @@ int main(int argc, char *argv[])
     g_backhaulDevices[0] = DynamicCast<WifiNetDevice>(wifiDevices.Get(0));
     g_backhaulDevices[1] = DynamicCast<WifiNetDevice>(wifiDevices.Get(1));
 
-    // Restore PCAP logging for all Wi-Fi interfaces to monitor WMM and DSCP tags
-    wifiPhy.EnablePcapAll("wban-edca-monitor");
+    wifiPhy.EnablePcap("wban-edca", wifiDevices);
 
     BasicEnergySourceHelper basicSourceHelper;
     for (const auto& config : WBAN_NETWORK)
@@ -180,7 +178,6 @@ int main(int argc, char *argv[])
         g_nodeBatteries[config.nodeId] = nodeSource.Get(0)->GetObject<ns3::energy::BasicEnergySource>();
     }
 
-    // Install standard IPv4 routing to support DSCP packet headers
     InternetStackHelper internet;
     internet.SetIpv6StackInstall(false); 
     internet.Install(allNodes.Get(0)); 
@@ -195,24 +192,32 @@ int main(int argc, char *argv[])
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // ========================================================================
+    // FIX: STATIC ARP INJECTION (Bypasses the ArpCache Trap)
+    // ========================================================================
+    Ptr<Ipv4L3Protocol> ipv4Coord = allNodes.Get(0)->GetObject<Ipv4L3Protocol>();
+    Ptr<ArpCache> arpCache = ipv4Coord->GetInterface(1)->GetArpCache(); 
+    
+    Mac48Address lpuMac48 = Mac48Address::ConvertFrom(g_backhaulDevices[1]->GetAddress());
+    ArpCache::Entry *entry = arpCache->Add(lpuIpAddress);
+    entry->SetMacAddress(lpuMac48);
+    entry->MarkPermanent();
+
+    // ========================================================================
     // TSN TRAFFIC CONTROL: GATE CONTROL LIST (GCL) INSTALLATION
     // ======================================================================== 
     NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
     
     TsnHelper tsnHelper;
-    tsnHelper.SetNumberOfQueues(3); // 3 Queues: CP (0), RP (1), OP (2)
+    tsnHelper.SetNumberOfQueues(3); 
     
-    // Switch classification from destination port to PCP/DSCP ToS byte mapping
     tsnHelper.SetClassificationMethod(TsnHelper::PCP_BASED);
     
-    // Weighted schedule prioritizing CP latency over OP latency.
     std::vector<double> gateWeights = {50.0, 30.0, 20.0}; 
     tsnHelper.SetScheduleWeighted(gateWeights, 10.0);
     
     QueueDiscContainer egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
     Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
 
-    // Start the passive polling engine via the Telemetry module
     WbanTelemetry::StartGclMonitoring(gcl, MilliSeconds(50));
     
     // ========================================================================
@@ -221,14 +226,12 @@ int main(int argc, char *argv[])
     
     Address coordMacAddress = Mac16Address("ff:ff");
 
-    // L2 Socket for receiving 802.15.4 WBAN frames
     Ptr<Socket> coordLrWpanRxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::PacketSocketFactory"));
     PacketSocketAddress localLrWpanAddr;
     localLrWpanAddr.SetSingleDevice(g_lrwpanDevices[0]->GetIfIndex());
     localLrWpanAddr.SetProtocol(0); 
     coordLrWpanRxSocket->Bind(localLrWpanAddr);
 
-    // L3 Socket (IPv4/UDP) for forwarding to LPU, enabling DSCP insertion
     Ptr<Socket> coordWifiTxSocket = Socket::CreateSocket(allNodes.Get(0), TypeId::LookupByName("ns3::UdpSocketFactory"));
     InetSocketAddress lpuInetAddr(lpuIpAddress, 9); 
     coordWifiTxSocket->Connect(lpuInetAddr);
@@ -248,7 +251,7 @@ int main(int argc, char *argv[])
     // LPU SINK CONFIGURATION
     // ========================================================================
     Ptr<LpuApp> lpuApp = CreateObject<LpuApp>();
-    lpuApp->Setup(9); // Listen on UDP port 9
+    lpuApp->Setup(9); 
     allNodes.Get(1)->AddApplication(lpuApp);
     lpuApp->SetStartTime(Seconds(0.0));
     lpuApp->SetStopTime(Seconds(simDuration));
