@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-from multiprocessing import shared_memory
+from multiprocessing import shared_memory, resource_tracker
 import struct
 import time
 from stable_baselines3 import PPO
@@ -13,6 +13,9 @@ class WbanGclEnv(gym.Env):
 
         # Connect to the POSIX shared memory created by C++
         self.shm = shared_memory.SharedMemory(name="wban_rl_shm")
+        
+        # FIX: Tell Python's resource tracker NOT to attempt cleanup. C++ owns this memory.
+        resource_tracker.unregister(self.shm._name, 'shared_memory')
         
         # Memory Layout: 2x 32-bit ints (flag + padding) + 15x 64-bit doubles
         self.struct_fmt = '=i i 15d'
@@ -33,11 +36,14 @@ class WbanGclEnv(gym.Env):
         data[0] = 0
         self.shm.buf[:self.struct_size] = struct.pack(self.struct_fmt, *data)
 
-        # Wait for C++ to simulate the hypercycle and flip the flag back to 1
+        # Wait for C++ to simulate the hypercycle and flip the flag back
         while True:
             flag = struct.unpack('=i', self.shm.buf[:4])[0]
             if flag == 1:
                 break
+            elif flag == -1:
+                # Catch the C++ termination handshake and exit cleanly
+                raise InterruptedError("Simulation naturally completed by ns-3.")
             time.sleep(0.0001)
 
         # Read the new state
@@ -72,10 +78,11 @@ if __name__ == "__main__":
             time.sleep(1)
 
     try:
-        # Force PyTorch to use the CPU to bypass the MX330 architecture mismatch
         model = PPO("MlpPolicy", env, verbose=1, device="cpu")
-        model.learn(total_timesteps=10000)
+        # Set to a virtually infinite loop; C++ dictates exactly when training stops
+        model.learn(total_timesteps=int(1e9))
+    except InterruptedError as e:
+        print(f"\nTraining ended safely: {e}")
     finally:
-        # Ensure shared memory is closed even if the script is interrupted or crashes
         env.close()
         print("Environment closed and shared memory released.")

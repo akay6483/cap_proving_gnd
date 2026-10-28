@@ -96,10 +96,12 @@ void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
 
 int main(int argc, char *argv[])
 {
-    CommandLine cmd(__FILE__);
-    cmd.Parse(argc, argv);
-
     double simDuration = 300.0; 
+    bool enableTsn = true;
+
+    CommandLine cmd(__FILE__);
+    cmd.AddValue("tsn", "Enable RL-driven TSN GCL (true) or default Wi-Fi EDCA (false)", enableTsn);
+    cmd.Parse(argc, argv);
     
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
     LogComponentEnable("WbanSensorApp", LOG_LEVEL_INFO); 
@@ -192,7 +194,7 @@ int main(int argc, char *argv[])
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // ========================================================================
-    // FIX: STATIC ARP INJECTION (Bypasses the ArpCache Trap)
+    // STATIC ARP INJECTION
     // ========================================================================
     Ptr<Ipv4L3Protocol> ipv4Coord = allNodes.Get(0)->GetObject<Ipv4L3Protocol>();
     Ptr<ArpCache> arpCache = ipv4Coord->GetInterface(1)->GetArpCache(); 
@@ -203,22 +205,28 @@ int main(int argc, char *argv[])
     entry->MarkPermanent();
 
     // ========================================================================
-    // TSN TRAFFIC CONTROL: GATE CONTROL LIST (GCL) INSTALLATION
+    // TSN TRAFFIC CONTROL / BASELINE TOGGLE
     // ======================================================================== 
-    NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
+    QueueDiscContainer egressQdisc;
     
-    TsnHelper tsnHelper;
-    tsnHelper.SetNumberOfQueues(3); 
-    
-    tsnHelper.SetClassificationMethod(TsnHelper::PCP_BASED);
-    
-    std::vector<double> gateWeights = {50.0, 30.0, 20.0}; 
-    tsnHelper.SetScheduleWeighted(gateWeights, 10.0);
-    
-    QueueDiscContainer egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
-    Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
+    if (enableTsn) {
+        NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
+        
+        TsnHelper tsnHelper;
+        tsnHelper.SetNumberOfQueues(3); 
+        tsnHelper.SetClassificationMethod(TsnHelper::PCP_BASED);
+        
+        std::vector<double> gateWeights = {50.0, 30.0, 20.0}; 
+        tsnHelper.SetScheduleWeighted(gateWeights, 10.0);
+        
+        egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
+        Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
 
-    WbanTelemetry::StartGclMonitoring(gcl, MilliSeconds(50));
+        // FIX: Replaced the 50ms poll with 1ms for high-resolution micro-burst telemetry
+        WbanTelemetry::StartGclMonitoring(gcl, MilliSeconds(1));
+    } else {
+        NS_LOG_INFO("TSN Disabled: Relying on standard Wi-Fi EDCA (Baseline Mode)");
+    }
     
     // ========================================================================
     // COORDINATOR SYNC SETUP & BINDINGS
@@ -306,10 +314,16 @@ int main(int argc, char *argv[])
 
     Simulator::Stop(Seconds(simDuration + 1.0)); 
     
-    Ptr<wban::GclQueueDisc> gclDisc = egressQdisc.Get(0)->GetObject<wban::GclQueueDisc>();
+    wban::WbanRlInterface rlAgent; 
 
-    wban::WbanRlInterface rlAgent;
-    rlAgent.Initialize(gclDisc);
+    if (enableTsn) {
+        Ptr<wban::GclQueueDisc> gclDisc = egressQdisc.Get(0)->GetObject<wban::GclQueueDisc>();
+        rlAgent.Initialize(gclDisc);
+        
+        // FIX: Schedule the termination flag to fire 0.01 seconds before the simulation hard-stops
+        // This gives Python exactly enough time to catch the -1 flag, raise InterruptedError, and exit cleanly
+        Simulator::Schedule(Seconds(simDuration - 0.01), &wban::WbanRlInterface::StopSimulation, &rlAgent);
+    }
 
     Simulator::Run();
     

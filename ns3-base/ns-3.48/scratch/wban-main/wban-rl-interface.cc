@@ -27,12 +27,12 @@ void WbanRlInterface::Initialize(Ptr<GclQueueDisc> gcl) {
 }
 
 void WbanRlInterface::TriggerRlStep() {
-    if (!m_gcl) return;
+    if (!m_gcl || !m_shm) return;
 
     // 1. Gather stats from the GCL
     GclQueueDisc::QueueStats stats = m_gcl->GetQueueStats();
 
-    // 2. Write State to Shared Memory (Casting to double for alignment)
+    // 2. Write State to Shared Memory
     for (int i = 0; i < 3; ++i) {
         m_shm->queueSizes[i]    = static_cast<double>(stats.queueSizes[i]);
         m_shm->arrivalCounts[i] = static_cast<double>(stats.arrivalCount[i]);
@@ -44,10 +44,12 @@ void WbanRlInterface::TriggerRlStep() {
     m_shm->python_ready = 1;
 
     // 4. Block ns-3 simulation thread and wait for Python to compute the action
-    // (Python runs in milliseconds, so an idle spin-wait prevents context-switch overhead)
     while (m_shm->python_ready == 1) {
         usleep(50); 
     }
+
+    // NEW: If the simulation was stopped manually during the wait, abort safely
+    if (m_shm->python_ready == -1) return;
 
     // 5. Read Action from Python
     std::vector<GclQueueDisc::GclEntry> newSchedule(3);
@@ -62,6 +64,14 @@ void WbanRlInterface::TriggerRlStep() {
     m_gcl->ResetStats();
 
     Simulator::Schedule(MilliSeconds(m_hypercycleMs), &WbanRlInterface::TriggerRlStep, this);
+}
+
+// NEW: Graceful termination payload triggered by ns-3 right before Simulator::Stop
+void WbanRlInterface::StopSimulation() {
+    if (m_shm) {
+        m_shm->python_ready = -1; 
+        std::cout << "[RL Interface] Termination signal sent to Python agent." << std::endl;
+    }
 }
 
 WbanRlInterface::~WbanRlInterface() {
