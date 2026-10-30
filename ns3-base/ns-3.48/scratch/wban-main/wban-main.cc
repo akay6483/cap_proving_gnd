@@ -15,6 +15,7 @@
 #include "ns3/internet-module.h"             
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/ai-module.h"
+#include "ns3/traffic-control-module.h" 
 
 #include "wban-config.h"
 #include "wban-traffic-generator.h" 
@@ -25,6 +26,8 @@
 #include "wban-telemetry.h" 
 #include "tsn-helper.h"      
 #include "wban-rl-interface.h"          
+
+#include <cstdlib> 
 
 using namespace ns3;
 using namespace ns3::wban;
@@ -96,11 +99,14 @@ void TriggerMapSchedule(Ptr<Socket> coordBroadcastSocket, Address destBroadcast)
 
 int main(int argc, char *argv[])
 {
-    double simDuration = 300.0; 
+    double simTime = 300.0; 
     bool enableTsn = true;
+    bool enableRl = true;
 
     CommandLine cmd(__FILE__);
+    cmd.AddValue("simTime", "Total duration of the simulation (seconds)", simTime);
     cmd.AddValue("tsn", "Enable RL-driven TSN GCL (true) or default Wi-Fi EDCA (false)", enableTsn);
+    cmd.AddValue("rl", "Enable Python RL Agent control over TSN gates (true/false)", enableRl);
     cmd.Parse(argc, argv);
     
     LogComponentEnable("WbanTsnDrlTopology", LOG_LEVEL_INFO);
@@ -156,8 +162,11 @@ int main(int argc, char *argv[])
     }
 
     WifiHelper wifi;
-    wifi.SetStandard(WIFI_STANDARD_80211n); 
-    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("HtMcs7"), "ControlMode", StringValue("HtMcs0"));
+    
+    wifi.SetStandard(WIFI_STANDARD_80211b); 
+    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", 
+                                 "DataMode", StringValue("DsssRate1Mbps"), 
+                                 "ControlMode", StringValue("DsssRate1Mbps"));
     
     YansWifiPhyHelper wifiPhy;
     wifiPhy.SetChannel(YansWifiChannelHelper::Default().Create());
@@ -205,24 +214,54 @@ int main(int argc, char *argv[])
     entry->MarkPermanent();
 
     // ========================================================================
-    // TSN TRAFFIC CONTROL / BASELINE TOGGLE
+    // TSN TRAFFIC CONTROL & BOTTLENECK SHAPING (MAC-AGNOSTIC OVERLAY)
     // ======================================================================== 
     QueueDiscContainer egressQdisc;
     
     if (enableTsn) {
-        NS_LOG_INFO("Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)");
+        NS_LOG_INFO("Installing TBF Shaper (Root) and TSN Gate Control List (Child) on Coordinator");
         
-        TsnHelper tsnHelper;
-        tsnHelper.SetNumberOfQueues(3); 
-        tsnHelper.SetClassificationMethod(TsnHelper::PCP_BASED);
-        
-        std::vector<double> gateWeights = {50.0, 30.0, 20.0}; 
-        tsnHelper.SetScheduleWeighted(gateWeights, 10.0);
-        
-        egressQdisc = tsnHelper.Install(g_backhaulDevices[0]);
-        Ptr<GclQueueDisc> gcl = egressQdisc.Get(0)->GetObject<GclQueueDisc>();
+        TrafficControlHelper tchUninstall;
+        tchUninstall.Uninstall(g_backhaulDevices[0]);
 
-        // FIX: Replaced the 50ms poll with 1ms for high-resolution micro-burst telemetry
+        TrafficControlHelper tc;
+        
+        // 1. Establish the Token Bucket Filter (TBF) as the Root QueueDisc
+        uint16_t rootHandle = tc.SetRootQueueDisc("ns3::TbfQueueDisc", 
+                                                  "Rate", StringValue("40kbps"), 
+                                                  "Burst", UintegerValue(5000), 
+                                                  "MaxSize", StringValue("65535B"));
+        
+        // 2. Add a classification band to the TBF to hold our custom GCL
+        tc.AddQueueDiscClasses(rootHandle, 1, "ns3::QueueDiscClass");
+        
+        // 3. Set the GCL Time-Aware Shaper as the child of the TBF
+        tc.AddChildQueueDisc(rootHandle, 0, "ns3::wban::GclQueueDisc", 
+                             "NumberOfQueues", UintegerValue(3));
+        
+        // Install the nested architecture onto the Wi-Fi interface
+        egressQdisc = tc.Install(g_backhaulDevices[0]);
+        
+        // 4. Retrieve the GCL instance by traversing the hierarchy from the Root (TBF) down to the Child (GCL)
+        Ptr<QueueDisc> rootTbf = egressQdisc.Get(0);                                  // Grab the Root
+        Ptr<QueueDiscClass> tbfClass = rootTbf->GetQueueDiscClass(0);                 // Grab the classification band
+        Ptr<GclQueueDisc> gcl = tbfClass->GetQueueDisc()->GetObject<GclQueueDisc>();  // Grab the Child
+        
+        // 5. Manually configure the static 50/30/20 schedule
+        std::vector<GclQueueDisc::GclEntry> schedule(3);
+        
+        schedule[0].duration = MilliSeconds(5.0); // 50% of 10ms for CP
+        schedule[0].gatesOpen = {true, false, false};
+        
+        schedule[1].duration = MilliSeconds(3.0); // 30% of 10ms for RP
+        schedule[1].gatesOpen = {false, true, false};
+        
+        schedule[2].duration = MilliSeconds(2.0); // 20% of 10ms for OP
+        schedule[2].gatesOpen = {false, false, true};
+        
+        gcl->SetGclSchedule(schedule);
+        gcl->SetUsePcp(true);
+
         WbanTelemetry::StartGclMonitoring(gcl, MilliSeconds(1));
     } else {
         NS_LOG_INFO("TSN Disabled: Relying on standard Wi-Fi EDCA (Baseline Mode)");
@@ -249,7 +288,7 @@ int main(int argc, char *argv[])
 
     allNodes.Get(0)->AddApplication(coordApp);
     coordApp->SetStartTime(Seconds(0.0));
-    coordApp->SetStopTime(Seconds(simDuration));
+    coordApp->SetStopTime(Seconds(simTime));
 
     coordApp->TraceConnectWithoutContext("RxFromSensor", MakeCallback(&CoordinatorRxTrace));
     coordApp->TraceConnectWithoutContext("RxFromSensor", MakeCallback(&WbanTelemetry::RecordCoordinatorRx));
@@ -262,7 +301,7 @@ int main(int argc, char *argv[])
     lpuApp->Setup(9); 
     allNodes.Get(1)->AddApplication(lpuApp);
     lpuApp->SetStartTime(Seconds(0.0));
-    lpuApp->SetStopTime(Seconds(simDuration));
+    lpuApp->SetStopTime(Seconds(simTime));
 
     lpuApp->TraceConnectWithoutContext("Rx", MakeCallback(&WbanTelemetry::RecordLpuRx));
 
@@ -298,7 +337,7 @@ int main(int argc, char *argv[])
         sensorApp->TraceConnectWithoutContext("Drop", MakeCallback(&WbanTelemetry::RecordAppDrop));
         
         sensorApp->SetStartTime(Seconds(1.0));
-        sensorApp->SetStopTime(Seconds(simDuration));
+        sensorApp->SetStopTime(Seconds(simTime));
     }
 
     Simulator::Schedule(Seconds(1.0), &TriggerMapSchedule, coordBroadcastSocket, destBroadcast);
@@ -307,22 +346,30 @@ int main(int argc, char *argv[])
     // TELEMETRY & SIMULATION EXECUTION
     // ======================================================================== 
     
-    WbanTelemetry::Initialize("wban_sim");
+    const char* homeEnv = getenv("HOME");
+    std::string homePath = homeEnv ? std::string(homeEnv) : "";
+    std::string csvPrefix = homePath + "/Documents/1_Projects/capstone/cap_proving_gnd/data-analysis/csv/wban_sim";
+    
+    WbanTelemetry::Initialize(csvPrefix);
 
     Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::LrWpanNetDevice/Mac/MacTxDrop", 
                                   MakeCallback(&WbanTelemetry::RecordMacDrop));
 
-    Simulator::Stop(Seconds(simDuration + 1.0)); 
+    Simulator::Stop(Seconds(simTime + 1.0)); 
     
     wban::WbanRlInterface rlAgent; 
 
-    if (enableTsn) {
-        Ptr<wban::GclQueueDisc> gclDisc = egressQdisc.Get(0)->GetObject<wban::GclQueueDisc>();
-        rlAgent.Initialize(gclDisc);
+    if (enableTsn && enableRl) {
+        NS_LOG_INFO("TSN and RL enabled. Mounting RL Shared Memory Bridge...");
+        // Replicate the hierarchy traversal logic here for the RL Bridge
+        Ptr<QueueDisc> rootTbf = egressQdisc.Get(0);
+        Ptr<QueueDiscClass> tbfClass = rootTbf->GetQueueDiscClass(0);
+        Ptr<wban::GclQueueDisc> gclDisc = tbfClass->GetQueueDisc()->GetObject<wban::GclQueueDisc>();
         
-        // FIX: Schedule the termination flag to fire 0.01 seconds before the simulation hard-stops
-        // This gives Python exactly enough time to catch the -1 flag, raise InterruptedError, and exit cleanly
-        Simulator::Schedule(Seconds(simDuration - 0.01), &wban::WbanRlInterface::StopSimulation, &rlAgent);
+        rlAgent.Initialize(gclDisc);
+        Simulator::Schedule(Seconds(simTime - 0.01), &wban::WbanRlInterface::StopSimulation, &rlAgent);
+    } else if (enableTsn && !enableRl) {
+        NS_LOG_INFO("TSN enabled, RL disabled. Running Static TSN Schedule.");
     }
 
     Simulator::Run();

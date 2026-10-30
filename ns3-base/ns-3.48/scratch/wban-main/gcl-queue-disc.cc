@@ -39,7 +39,7 @@ GclQueueDisc::GetTypeId(void)
             .AddConstructor<GclQueueDisc>()                 // allows creation via ObjectFactory::Create<GclQueueDisc>()
             .AddAttribute("MaxSize",                        // attribute: total packet capacity of this disc
                           "The maximum number of packets accepted by this queue disc",
-                          QueueSizeValue(QueueSize("1000p")),                          // default 1000 packets
+                          QueueSizeValue(QueueSize("50p")),                          // default 50 packets
                           MakeQueueSizeAccessor(&QueueDisc::SetMaxSize, &QueueDisc::GetMaxSize),
                           MakeQueueSizeChecker())
             .AddAttribute("NumberOfQueues",                 // attribute: how many priority classes (1–8)
@@ -271,7 +271,7 @@ GclQueueDisc::CheckConfig(void)
 
         ObjectFactory factory;
         factory.SetTypeId("ns3::DropTailQueue<QueueDiscItem>"); // simple FIFO, drops tail when full
-        factory.Set("MaxSize", QueueSizeValue(QueueSize("1000p"))); // 1000 packets per class
+        factory.Set("MaxSize", QueueSizeValue(QueueSize("50p"))); // 50 packets per class
 
         for (uint32_t i = 0; i < m_nQueues; i++)
         {

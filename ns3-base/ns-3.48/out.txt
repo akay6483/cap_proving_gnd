@@ -1,0 +1,1620 @@
+[0/2] Re-checking globbed directories...
+[1/3] Building CXX object scratch/CMakeFiles/scratch_wban-main_wban-main.dir/wban-main/wban-main.cc.o
+[2/3] Linking CXX executable /home/akay/Documents/1_Projects/capstone/cap_proving_gnd/ns3-base/ns-3.48/build/scratch/wban-main/ns3.48-wban-main-debug
+Installing TSN Gate Control List on Coordinator Egress (Wi-Fi)
+Classification method: PCP/DSCP-based
+GCL Schedule configured:
+  Number of entries: 3
+  Cycle time: 10 ms
+  Entry 0: duration=5ms, gates=3
+  Entry 1: duration=3ms, gates=3
+  Entry 2: duration=2ms, gates=3
+WbanCoordinatorApp:WbanCoordinatorApp(0x5ae23dc31750)
+WbanCoordinatorApp:Setup(0x5ae23dc31750, 0x5ae23db05710, 0x5ae23dafddc0, 04-06-c0:a8:01:02:09:00)
+LpuApp:LpuApp(0x5ae23dc31e20)
+Registered Node 2 | Hierarchy: 0 | Max Slots: 2
+Registered Node 3 | Hierarchy: 0 | Max Slots: 1
+Registered Node 5 | Hierarchy: 0 | Max Slots: 2
+Registered Node 10 | Hierarchy: 0 | Max Slots: 1
+Registered Node 6 | Hierarchy: 1 | Max Slots: 1
+Registered Node 7 | Hierarchy: 1 | Max Slots: 1
+Registered Node 8 | Hierarchy: 1 | Max Slots: 1
+Registered Node 4 | Hierarchy: 2 | Max Slots: 1
+Registered Node 9 | Hierarchy: 2 | Max Slots: 1
+Registered Node 11 | Hierarchy: 2 | Max Slots: 1
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+Deprecation warning for name ns3::LrWpanNetDevice; use ns3::lrwpan::LrWpanNetDevice instead
+TSN and RL enabled. Mounting RL Shared Memory Bridge...
+[RL Interface] Shared memory bridge initialized at /dev/shm/wban_rl_shm
+Creating 3 internal queues
+WbanCoordinatorApp:StartApplication(0x5ae23dc31750)
+WbanCoordinatorApp started. Listening on 802.15.4 and ready to forward to Wi-Fi over IPv4.
+LpuApp:StartApplication(0x5ae23dc31e20)
+LPU App started. Listening on UDP port 9
+[T=1s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+GCL schedule update requested
+Node 2 | App Started. Waiting for Network Sync Frame.
+Node 3 | App Started. Waiting for Network Sync Frame.
+Node 4 | App Started. Waiting for Network Sync Frame.
+Node 5 | App Started. Waiting for Network Sync Frame.
+Node 6 | App Started. Waiting for Network Sync Frame.
+Node 7 | App Started. Waiting for Network Sync Frame.
+Node 8 | App Started. Waiting for Network Sync Frame.
+Node 9 | App Started. Waiting for Network Sync Frame.
+Node 10 | App Started. Waiting for Network Sync Frame.
+Node 11 | App Started. Waiting for Network Sync Frame.
+Node 7 | Sync Rx -> Starved / Empty Buffer.
+Node 10 | Sync Rx -> Starved / Empty Buffer.
+Node 6 | Sync Rx -> Starved / Empty Buffer.
+Node 8 | Sync Rx -> Starved / Empty Buffer.
+Node 4 | Sync Rx -> Starved / Empty Buffer.
+Node 9 | Sync Rx -> Starved / Empty Buffer.
+Node 2 | Sync Rx -> Starved / Empty Buffer.
+Node 3 | Sync Rx -> Starved / Empty Buffer.
+Node 5 | Sync Rx -> Starved / Empty Buffer.
+Node 11 | Sync Rx -> Starved / Empty Buffer.
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 95/4096B). Tag: RP
+Node 3 | Generated 49 bytes (Total Buffer: 49/4096B). Tag: RP
+Node 2 | Generated 97 bytes (Total Buffer: 97/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 96 bytes (Total Buffer: 96/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 99 bytes (Total Buffer: 194/4096B). Tag: OP
+Node 3 | Generated 47 bytes (Total Buffer: 96/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 97 bytes (Total Buffer: 194/4096B). Tag: RP
+Node 5 | Generated 96 bytes (Total Buffer: 192/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 58 bytes (Total Buffer: 58/2048B). Tag: OP
+Node 11 | Generated 56 bytes (Total Buffer: 56/2048B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 289/4096B). Tag: RP
+Node 3 | Generated 44 bytes (Total Buffer: 140/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 96 bytes (Total Buffer: 288/4096B). Tag: OP
+Node 2 | Generated 96 bytes (Total Buffer: 290/4096B). Tag: RP
+Node 4 | Generated 16 bytes (Total Buffer: 16/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 43 bytes (Total Buffer: 183/4096B). Tag: OP
+Node 10 | Generated 96 bytes (Total Buffer: 385/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 95 bytes (Total Buffer: 383/4096B). Tag: RP
+Node 2 | Generated 97 bytes (Total Buffer: 387/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 58 bytes (Total Buffer: 114/2048B). Tag: OP
+[T=1.49152s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> Starved / Empty Buffer.
+Node 10 | Sync Rx -> Starved / Empty Buffer.
+Node 6 | Sync Rx -> Starved / Empty Buffer.
+Node 8 | Sync Rx -> Starved / Empty Buffer.
+Node 4 | Sync Rx -> Starved / Empty Buffer.
+Node 9 | Sync Rx -> Starved / Empty Buffer.
+Node 2 | Sync Rx -> Starved / Empty Buffer.
+Node 3 | Sync Rx -> Starved / Empty Buffer.
+Node 5 | Sync Rx -> Starved / Empty Buffer.
+Node 11 | Sync Rx -> Starved / Empty Buffer.
+Node 10 | Generated 99 bytes (Total Buffer: 484/4096B). Tag: OP
+Node 3 | Generated 49 bytes (Total Buffer: 232/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 480/4096B). Tag: OP
+Node 2 | Generated 96 bytes (Total Buffer: 483/4096B). Tag: RP
+Node 9 | Generated 51 bytes (Total Buffer: 109/2048B). Tag: OP
+Node 9 | Sent Physical GTS Request over CAP for 109 bytes.
+[T=1.50797s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.50797s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+Node 11 | Sent Physical GTS Request over CAP for 114 bytes.
+GCL schedule update requested
+[T=1.51248s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.51248s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+Node 5 | Sent Physical GTS Request over CAP for 480 bytes.
+[T=1.51803s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.51803s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+GCL schedule update requested
+Node 4 | Sent Physical GTS Request over CAP for 16 bytes.
+[T=1.52874s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.52874s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+GCL schedule update requested
+Node 10 | Sent Physical GTS Request over CAP for 484 bytes.
+Node 3 | Sent Physical GTS Request over CAP for 232 bytes.
+Node 4 | Generated 16 bytes (Total Buffer: 32/2048B). Tag: OP
+Node 2 | Sent Physical GTS Request over CAP for 483 bytes.
+[T=1.53704s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.53704s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.53825s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.53825s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.54s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=1.54s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 43 bytes (Total Buffer: 275/4096B). Tag: RP
+Node 10 | Generated 99 bytes (Total Buffer: 583/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 577/4096B). Tag: RP
+Node 2 | Generated 95 bytes (Total Buffer: 578/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 48 bytes (Total Buffer: 323/4096B). Tag: RP
+Node 10 | Generated 97 bytes (Total Buffer: 680/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 96 bytes (Total Buffer: 673/4096B). Tag: OP
+Node 2 | Generated 96 bytes (Total Buffer: 674/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 59 bytes (Total Buffer: 173/2048B). Tag: OP
+GCL schedule update requested
+Node 9 | Generated 58 bytes (Total Buffer: 167/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 46 bytes (Total Buffer: 369/4096B). Tag: OP
+GCL schedule update requested
+Node 10 | Generated 98 bytes (Total Buffer: 778/4096B). Tag: OP
+Node 4 | Generated 16 bytes (Total Buffer: 48/2048B). Tag: RP
+Node 5 | Generated 98 bytes (Total Buffer: 771/4096B). Tag: OP
+Node 2 | Generated 95 bytes (Total Buffer: 769/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 416/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 98 bytes (Total Buffer: 869/4096B). Tag: RP
+Node 10 | Generated 97 bytes (Total Buffer: 875/4096B). Tag: OP
+Node 2 | Generated 96 bytes (Total Buffer: 865/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 8 | Generated 49 bytes (Total Buffer: 49/1024B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+[T=1.98304s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> Starved / Empty Buffer.
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> Starved / Empty Buffer.
+Node 8 | Sync Rx -> Starved / Empty Buffer.
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+GCL schedule update requested
+Node 11 | Generated 58 bytes (Total Buffer: 231/2048B). Tag: RP
+Node 9 | Generated 55 bytes (Total Buffer: 222/2048B). Tag: OP
+Node 3 | Generated 42 bytes (Total Buffer: 458/4096B). Tag: RP
+Node 5 | Generated 99 bytes (Total Buffer: 968/4096B). Tag: RP
+GCL schedule update requested
+Node 10 | Generated 97 bytes (Total Buffer: 972/4096B). Tag: OP
+Node 7 | Generated 16 bytes (Total Buffer: 16/1024B). Tag: RP
+Node 2 | Generated 97 bytes (Total Buffer: 962/4096B). Tag: OP
+GCL schedule update requested
+Node 8 | Sent Physical GTS Request over CAP for 49 bytes.
+[T=2.01691s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=2.01691s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 6 | Generated 32 bytes (Total Buffer: 32/1024B). Tag: CP
+[T=2.04678s] Tx | Node 2 | Seq: 1 | Prio: RP | Size: 100 bytes
+[T=2.04678s] Tx | Node 2 | Seq: 2 | Prio: RP | Size: 100 bytes
+GCL schedule update requested
+[T=2.05213s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 1 | Size: 100 bytes
+[T=2.05213s] Coordinator Rx | Node: 2 | Seq: 1 | Size: 100 bytes
+[T=2.05213s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 1 | DSCP: 32 | QoS Type: RP
+[T=2.05747s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 2 | Size: 100 bytes
+[T=2.05747s] Coordinator Rx | Node: 2 | Seq: 2 | Size: 100 bytes
+[T=2.05747s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 2 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34a80)
+[T=2.05903s] Rx | LPU Received Packet 1 | Node: 2 | Seq: 1 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=2.06105s] Rx | LPU Received Packet 2 | Node: 2 | Seq: 2 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+[T=2.0775s] Tx | Node 3 | Seq: 1 | Prio: RP | Size: 50 bytes
+Node 4 | Generated 16 bytes (Total Buffer: 64/2048B). Tag: OP
+GCL schedule update requested
+[T=2.08029s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 1 | Size: 50 bytes
+[T=2.08029s] Coordinator Rx | Node: 3 | Seq: 1 | Size: 50 bytes
+[T=2.08029s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 1 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+[T=2.09286s] Tx | Node 5 | Seq: 1 | Prio: RP | Size: 100 bytes
+[T=2.09286s] Tx | Node 5 | Seq: 2 | Prio: RP | Size: 100 bytes
+[T=2.09789s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 1 | Size: 100 bytes
+[T=2.09789s] Coordinator Rx | Node: 5 | Seq: 1 | Size: 100 bytes
+[T=2.09789s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 1 | DSCP: 32 | QoS Type: RP
+Node 3 | Generated 46 bytes (Total Buffer: 469/4096B). Tag: RP
+Node 5 | Generated 95 bytes (Total Buffer: 893/4096B). Tag: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33420)
+[T=2.09904s] Rx | LPU Received Packet 3 | Node: 3 | Seq: 1 | Size: 35 bytes | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=2.10105s] Rx | LPU Received Packet 4 | Node: 5 | Seq: 1 | Size: 85 bytes | QoS Type: RP
+Node 10 | Generated 99 bytes (Total Buffer: 1071/4096B). Tag: OP
+[T=2.10323s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 2 | Size: 100 bytes
+[T=2.10323s] Coordinator Rx | Node: 5 | Seq: 2 | Size: 100 bytes
+[T=2.10323s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 2 | DSCP: 32 | QoS Type: RP
+Node 2 | Generated 95 bytes (Total Buffer: 887/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+[T=2.12358s] Tx | Node 10 | Seq: 1 | Prio: RP | Size: 100 bytes
+[T=2.12861s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 1 | Size: 100 bytes
+[T=2.12861s] Coordinator Rx | Node: 10 | Seq: 1 | Size: 100 bytes
+[T=2.12861s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 1 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+[T=2.13894s] Tx | Node 4 | Seq: 1 | Prio: RP | Size: 16 bytes
+GCL schedule update requested
+[T=2.14256s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 1 | Size: 16 bytes
+[T=2.14256s] Coordinator Rx | Node: 4 | Seq: 1 | Size: 16 bytes
+[T=2.14256s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 1 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+[T=2.1543s] Tx | Node 9 | Seq: 1 | Prio: OP | Size: 64 bytes
+[T=2.15946s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 1 | Size: 64 bytes
+[T=2.15946s] Coordinator Rx | Node: 9 | Seq: 1 | Size: 64 bytes
+[T=2.15946s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 1 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6fa80)
+[T=2.16072s] Rx | LPU Received Packet 5 | Node: 9 | Seq: 1 | Size: 49 bytes | QoS Type: OP
+[T=2.16966s] Tx | Node 11 | Seq: 1 | Prio: RP | Size: 64 bytes
+GCL schedule update requested
+[T=2.17354s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 1 | Size: 64 bytes
+[T=2.17354s] Coordinator Rx | Node: 11 | Seq: 1 | Size: 64 bytes
+[T=2.17354s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 1 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 990/4096B). Tag: RP
+Node 3 | Generated 45 bytes (Total Buffer: 514/4096B). Tag: OP
+GCL schedule update requested
+Node 10 | Generated 97 bytes (Total Buffer: 1083/4096B). Tag: RP
+Node 2 | Generated 96 bytes (Total Buffer: 983/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 61 bytes (Total Buffer: 243/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 58 bytes (Total Buffer: 231/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 79/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 5 | Generated 98 bytes (Total Buffer: 1088/4096B). Tag: RP
+Node 3 | Generated 45 bytes (Total Buffer: 559/4096B). Tag: CP
+Node 10 | Generated 99 bytes (Total Buffer: 1182/4096B). Tag: CP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 1082/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 5 | Generated 95 bytes (Total Buffer: 1183/4096B). Tag: RP
+Node 3 | Generated 45 bytes (Total Buffer: 604/4096B). Tag: RP
+Node 10 | Generated 98 bytes (Total Buffer: 1280/4096B). Tag: CP
+GCL schedule update requested
+Node 2 | Generated 97 bytes (Total Buffer: 1179/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 95/2048B). Tag: OP
+[T=2.47456s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> Starved / Empty Buffer.
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> Starved / Empty Buffer.
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 11 | Generated 52 bytes (Total Buffer: 295/2048B). Tag: OP
+GCL schedule update requested
+Node 6 | Sent Physical GTS Request over CAP for 32 bytes.
+[T=2.48718s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=2.48718s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+GCL schedule update requested
+Node 5 | Generated 99 bytes (Total Buffer: 1282/4096B). Tag: RP
+Node 3 | Generated 47 bytes (Total Buffer: 651/4096B). Tag: RP
+Node 10 | Generated 95 bytes (Total Buffer: 1375/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 95 bytes (Total Buffer: 1274/4096B). Tag: OP
+GCL schedule update requested
+Node 7 | Sent Physical GTS Request over CAP for 16 bytes.
+Node 9 | Generated 63 bytes (Total Buffer: 294/2048B). Tag: OP
+[T=2.51573s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 0 | Seq: 0 | Size: 10 bytes
+[T=2.51573s] Coordinator Rx | Node: 0 | Seq: 0 | Size: 10 bytes
+GCL schedule update requested
+GCL schedule update requested
+[T=2.5383s] Tx | Node 2 | Seq: 3 | Prio: RP | Size: 100 bytes
+[T=2.5383s] Tx | Node 2 | Seq: 4 | Prio: RP | Size: 100 bytes
+GCL schedule update requested
+[T=2.54301s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 3 | Size: 100 bytes
+[T=2.54301s] Coordinator Rx | Node: 2 | Seq: 3 | Size: 100 bytes
+[T=2.54301s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 3 | DSCP: 32 | QoS Type: RP
+[T=2.54835s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 4 | Size: 100 bytes
+[T=2.54835s] Coordinator Rx | Node: 2 | Seq: 4 | Size: 100 bytes
+[T=2.54835s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 4 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+GCL schedule update requested
+[T=2.56902s] Tx | Node 3 | Seq: 2 | Prio: CP | Size: 50 bytes
+GCL schedule update requested
+[T=2.57341s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 2 | Size: 50 bytes
+[T=2.57341s] Coordinator Rx | Node: 3 | Seq: 2 | Size: 50 bytes
+[T=2.57341s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 2 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da8aec0)
+[T=2.57456s] Rx | LPU Received Packet 6 | Node: 3 | Seq: 2 | Size: 35 bytes | QoS Type: CP
+GCL schedule update requested
+[T=2.58438s] Tx | Node 5 | Seq: 3 | Prio: RP | Size: 100 bytes
+[T=2.58438s] Tx | Node 5 | Seq: 4 | Prio: RP | Size: 100 bytes
+GCL schedule update requested
+[T=2.59069s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 3 | Size: 100 bytes
+[T=2.59069s] Coordinator Rx | Node: 5 | Seq: 3 | Size: 100 bytes
+[T=2.59069s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 3 | DSCP: 32 | QoS Type: RP
+[T=2.59539s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 4 | Size: 100 bytes
+[T=2.59539s] Coordinator Rx | Node: 5 | Seq: 4 | Size: 100 bytes
+[T=2.59539s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 4 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa20f0)
+[T=2.59695s] Rx | LPU Received Packet 7 | Node: 5 | Seq: 2 | Size: 85 bytes | QoS Type: RP
+Node 3 | Generated 47 bytes (Total Buffer: 240/4096B). Tag: OP
+Node 10 | Generated 97 bytes (Total Buffer: 1472/4096B). Tag: RP
+Node 5 | Generated 99 bytes (Total Buffer: 413/4096B). Tag: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc332d0)
+[T=2.59891s] Rx | LPU Received Packet 8 | Node: 10 | Seq: 1 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc04540)
+[T=2.60039s] Rx | LPU Received Packet 9 | Node: 4 | Seq: 1 | Size: 1 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=2.60207s] Rx | LPU Received Packet 10 | Node: 11 | Seq: 1 | Size: 49 bytes | QoS Type: RP
+Node 2 | Generated 99 bytes (Total Buffer: 411/4096B). Tag: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da834c0)
+[T=2.60456s] Rx | LPU Received Packet 11 | Node: 2 | Seq: 3 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc22520)
+[T=2.60687s] Rx | LPU Received Packet 12 | Node: 2 | Seq: 4 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6e1b0)
+[T=2.60927s] Rx | LPU Received Packet 13 | Node: 5 | Seq: 3 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33a60)
+[T=2.61158s] Rx | LPU Received Packet 14 | Node: 5 | Seq: 4 | Size: 85 bytes | QoS Type: RP
+[T=2.6151s] Tx | Node 10 | Seq: 2 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+[T=2.62109s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 2 | Size: 100 bytes
+[T=2.62109s] Coordinator Rx | Node: 10 | Seq: 2 | Size: 100 bytes
+[T=2.62109s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 2 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34bd0)
+[T=2.62264s] Rx | LPU Received Packet 15 | Node: 10 | Seq: 2 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+[T=2.63046s] Tx | Node 8 | Seq: 1 | Prio: RP | Size: 50 bytes
+[T=2.63421s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 8 | Seq: 1 | Size: 50 bytes
+[T=2.63421s] Coordinator Rx | Node: 8 | Seq: 1 | Size: 50 bytes
+[T=2.63421s] Tx | Coordinator -> LPU | Fwd Node: 8 | Seq: 1 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+[T=2.64582s] Tx | Node 9 | Seq: 2 | Prio: OP | Size: 64 bytes
+GCL schedule update requested
+[T=2.65002s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 2 | Size: 64 bytes
+[T=2.65002s] Coordinator Rx | Node: 9 | Seq: 2 | Size: 64 bytes
+[T=2.65002s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 2 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+[T=2.66118s] Tx | Node 11 | Seq: 2 | Prio: OP | Size: 64 bytes
+[T=2.6657s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 2 | Size: 64 bytes
+[T=2.6657s] Coordinator Rx | Node: 11 | Seq: 2 | Size: 64 bytes
+[T=2.6657s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 2 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=2.66685s] Rx | LPU Received Packet 16 | Node: 8 | Seq: 1 | Size: 35 bytes | QoS Type: RP
+GCL schedule update requested
+[T=2.67654s] Tx | Node 4 | Seq: 2 | Prio: OP | Size: 16 bytes
+[T=2.67888s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 2 | Size: 16 bytes
+[T=2.67888s] Coordinator Rx | Node: 4 | Seq: 2 | Size: 16 bytes
+[T=2.67888s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 2 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da737d0)
+[T=2.68015s] Rx | LPU Received Packet 17 | Node: 9 | Seq: 2 | Size: 49 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc20630)
+[T=2.68203s] Rx | LPU Received Packet 18 | Node: 11 | Seq: 2 | Size: 49 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da834c0)
+[T=2.68342s] Rx | LPU Received Packet 19 | Node: 4 | Seq: 2 | Size: 1 bytes | QoS Type: OP
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 496/4096B). Tag: RP
+Node 5 | Generated 99 bytes (Total Buffer: 512/4096B). Tag: RP
+Node 3 | Generated 49 bytes (Total Buffer: 289/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 510/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 63 bytes (Total Buffer: 127/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: OP
+GCL schedule update requested
+Node 9 | Generated 55 bytes (Total Buffer: 127/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 99 bytes (Total Buffer: 595/4096B). Tag: OP
+Node 5 | Generated 96 bytes (Total Buffer: 608/4096B). Tag: RP
+Node 3 | Generated 44 bytes (Total Buffer: 333/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 96 bytes (Total Buffer: 606/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 690/4096B). Tag: OP
+Node 3 | Generated 44 bytes (Total Buffer: 377/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 96 bytes (Total Buffer: 704/4096B). Tag: RP
+Node 2 | Generated 95 bytes (Total Buffer: 701/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 6 | Generated 32 bytes (Total Buffer: 64/1024B). Tag: RP
+GCL schedule update requested
+[T=2.96608s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 8 | Generated 49 bytes (Total Buffer: 63/1024B). Tag: CP
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.2304s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 49 bytes (Total Buffer: 176/2048B). Tag: OP
+Node 3 | Generated 43 bytes (Total Buffer: 420/4096B). Tag: OP
+Node 10 | Generated 98 bytes (Total Buffer: 788/4096B). Tag: OP
+Node 5 | Generated 98 bytes (Total Buffer: 802/4096B). Tag: CP
+GCL schedule update requested
+Node 2 | Generated 97 bytes (Total Buffer: 798/4096B). Tag: RP
+Node 9 | Generated 60 bytes (Total Buffer: 187/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+[T=3.02982s] Tx | Node 2 | Seq: 5 | Prio: RP | Size: 100 bytes
+[T=3.02982s] Tx | Node 2 | Seq: 6 | Prio: RP | Size: 100 bytes
+GCL schedule update requested
+[T=3.03421s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 5 | Size: 100 bytes
+[T=3.03421s] Coordinator Rx | Node: 2 | Seq: 5 | Size: 100 bytes
+[T=3.03421s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 5 | DSCP: 32 | QoS Type: RP
+Node 7 | Generated 16 bytes (Total Buffer: 32/1024B). Tag: OP
+[T=3.03955s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 6 | Size: 100 bytes
+[T=3.03955s] Coordinator Rx | Node: 2 | Seq: 6 | Size: 100 bytes
+[T=3.03955s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 6 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+[T=3.06054s] Tx | Node 3 | Seq: 3 | Prio: RP | Size: 50 bytes
+[T=3.06493s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 3 | Size: 50 bytes
+[T=3.06493s] Coordinator Rx | Node: 3 | Seq: 3 | Size: 50 bytes
+[T=3.06493s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 3 | DSCP: 32 | QoS Type: RP
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: OP
+GCL schedule update requested
+[T=3.0759s] Tx | Node 5 | Seq: 5 | Prio: CP | Size: 100 bytes
+[T=3.0759s] Tx | Node 5 | Seq: 6 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+[T=3.08189s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 5 | Size: 100 bytes
+[T=3.08189s] Coordinator Rx | Node: 5 | Seq: 5 | Size: 100 bytes
+[T=3.08189s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 5 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc343c0)
+[T=3.08344s] Rx | LPU Received Packet 20 | Node: 5 | Seq: 5 | Size: 85 bytes | QoS Type: CP
+[T=3.08659s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 6 | Size: 100 bytes
+[T=3.08659s] Coordinator Rx | Node: 5 | Seq: 6 | Size: 100 bytes
+[T=3.08659s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 6 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa1760)
+[T=3.08815s] Rx | LPU Received Packet 21 | Node: 2 | Seq: 5 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6fa80)
+[T=3.09035s] Rx | LPU Received Packet 22 | Node: 2 | Seq: 6 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da60fe0)
+[T=3.09188s] Rx | LPU Received Packet 23 | Node: 3 | Seq: 3 | Size: 35 bytes | QoS Type: RP
+Node 10 | Generated 96 bytes (Total Buffer: 884/4096B). Tag: OP
+Node 3 | Generated 47 bytes (Total Buffer: 239/4096B). Tag: RP
+Node 5 | Generated 95 bytes (Total Buffer: 413/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 98 bytes (Total Buffer: 414/4096B). Tag: RP
+[T=3.10662s] Tx | Node 10 | Seq: 3 | Prio: RP | Size: 100 bytes
+GCL schedule update requested
+[T=3.11101s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 3 | Size: 100 bytes
+[T=3.11101s] Coordinator Rx | Node: 10 | Seq: 3 | Size: 100 bytes
+[T=3.11101s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 3 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc35d40)
+[T=3.11256s] Rx | LPU Received Packet 24 | Node: 5 | Seq: 6 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+[T=3.12198s] Tx | Node 6 | Seq: 1 | Prio: CP | Size: 32 bytes
+[T=3.12387s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 6 | Seq: 1 | Size: 32 bytes
+[T=3.12387s] Coordinator Rx | Node: 6 | Seq: 1 | Size: 32 bytes
+[T=3.12387s] Tx | Coordinator -> LPU | Fwd Node: 6 | Seq: 1 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc4dc90)
+[T=3.12488s] Rx | LPU Received Packet 25 | Node: 6 | Seq: 1 | Size: 17 bytes | QoS Type: CP
+GCL schedule update requested
+[T=3.13734s] Tx | Node 7 | Seq: 1 | Prio: RP | Size: 16 bytes
+GCL schedule update requested
+[T=3.14s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 7 | Seq: 1 | Size: 16 bytes
+[T=3.14s] Coordinator Rx | Node: 7 | Seq: 1 | Size: 16 bytes
+GCL schedule updated at cycle boundary. Cycle count: 1
+[T=3.14s] Tx | Coordinator -> LPU | Fwd Node: 7 | Seq: 1 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+[T=3.1527s] Tx | Node 8 | Seq: 2 | Prio: CP | Size: 50 bytes
+[T=3.15677s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 8 | Seq: 2 | Size: 50 bytes
+[T=3.15677s] Coordinator Rx | Node: 8 | Seq: 2 | Size: 50 bytes
+[T=3.15677s] Tx | Coordinator -> LPU | Fwd Node: 8 | Seq: 2 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+[T=3.16806s] Tx | Node 11 | Seq: 3 | Prio: OP | Size: 64 bytes
+GCL schedule update requested
+[T=3.17162s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 3 | Size: 64 bytes
+[T=3.17162s] Coordinator Rx | Node: 11 | Seq: 3 | Size: 64 bytes
+[T=3.17162s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 3 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=3.17317s] Rx | LPU Received Packet 26 | Node: 10 | Seq: 3 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34bd0)
+[T=3.17459s] Rx | LPU Received Packet 27 | Node: 7 | Seq: 1 | Size: 1 bytes | QoS Type: RP
+GCL schedule update requested
+[T=3.18342s] Tx | Node 4 | Seq: 3 | Prio: OP | Size: 16 bytes
+[T=3.18672s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 3 | Size: 16 bytes
+[T=3.18672s] Coordinator Rx | Node: 4 | Seq: 3 | Size: 16 bytes
+[T=3.18672s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 3 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da8aec0)
+[T=3.18787s] Rx | LPU Received Packet 28 | Node: 8 | Seq: 2 | Size: 35 bytes | QoS Type: CP
+GCL schedule update requested
+Node 10 | Generated 99 bytes (Total Buffer: 497/4096B). Tag: OP
+[T=3.19878s] Tx | Node 9 | Seq: 3 | Prio: OP | Size: 64 bytes
+Node 3 | Generated 43 bytes (Total Buffer: 282/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 96 bytes (Total Buffer: 509/4096B). Tag: CP
+[T=3.20202s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 3 | Size: 64 bytes
+[T=3.20202s] Coordinator Rx | Node: 9 | Seq: 3 | Size: 64 bytes
+[T=3.20202s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 3 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34bd0)
+[T=3.20328s] Rx | LPU Received Packet 29 | Node: 11 | Seq: 3 | Size: 49 bytes | QoS Type: OP
+Node 2 | Generated 95 bytes (Total Buffer: 509/4096B). Tag: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa1760)
+[T=3.2046s] Rx | LPU Received Packet 30 | Node: 4 | Seq: 3 | Size: 1 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33420)
+[T=3.2064s] Rx | LPU Received Packet 31 | Node: 9 | Seq: 3 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 58 bytes (Total Buffer: 121/2048B). Tag: OP
+GCL schedule update requested
+Node 9 | Generated 61 bytes (Total Buffer: 127/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 592/4096B). Tag: OP
+Node 5 | Generated 97 bytes (Total Buffer: 606/4096B). Tag: RP
+GCL schedule update requested
+Node 3 | Generated 45 bytes (Total Buffer: 327/4096B). Tag: RP
+Node 2 | Generated 97 bytes (Total Buffer: 606/4096B). Tag: OP
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 98 bytes (Total Buffer: 690/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 374/4096B). Tag: CP
+Node 5 | Generated 95 bytes (Total Buffer: 701/4096B). Tag: OP
+Node 2 | Generated 99 bytes (Total Buffer: 705/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+[T=3.4576s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.2304s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 97 bytes (Total Buffer: 787/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+Node 3 | Generated 45 bytes (Total Buffer: 419/4096B). Tag: RP
+Node 5 | Generated 99 bytes (Total Buffer: 800/4096B). Tag: RP
+Node 2 | Generated 99 bytes (Total Buffer: 804/4096B). Tag: CP
+Node 11 | Generated 54 bytes (Total Buffer: 175/2048B). Tag: OP
+GCL schedule update requested
+Node 9 | Generated 54 bytes (Total Buffer: 181/2048B). Tag: OP
+GCL schedule update requested
+[T=3.52102s] Tx | Node 2 | Seq: 7 | Prio: CP | Size: 100 bytes
+[T=3.52102s] Tx | Node 2 | Seq: 8 | Prio: CP | Size: 100 bytes
+[T=3.52541s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 7 | Size: 100 bytes
+[T=3.52541s] Coordinator Rx | Node: 2 | Seq: 7 | Size: 100 bytes
+[T=3.52541s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 7 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+[T=3.53107s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 8 | Size: 100 bytes
+[T=3.53107s] Coordinator Rx | Node: 2 | Seq: 8 | Size: 100 bytes
+[T=3.53107s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 8 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+GCL schedule update requested
+[T=3.55174s] Tx | Node 3 | Seq: 4 | Prio: CP | Size: 50 bytes
+[T=3.55453s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 4 | Size: 50 bytes
+[T=3.55453s] Coordinator Rx | Node: 3 | Seq: 4 | Size: 50 bytes
+[T=3.55453s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 4 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+[T=3.5671s] Tx | Node 5 | Seq: 7 | Prio: CP | Size: 100 bytes
+[T=3.5671s] Tx | Node 5 | Seq: 8 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: OP
+[T=3.57117s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 7 | Size: 100 bytes
+[T=3.57117s] Coordinator Rx | Node: 5 | Seq: 7 | Size: 100 bytes
+[T=3.57117s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 7 | DSCP: 48 | QoS Type: CP
+[T=3.57779s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 8 | Size: 100 bytes
+[T=3.57779s] Coordinator Rx | Node: 5 | Seq: 8 | Size: 100 bytes
+[T=3.57779s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 8 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+Node 10 | Generated 96 bytes (Total Buffer: 883/4096B). Tag: RP
+GCL schedule update requested
+[T=3.59782s] Tx | Node 10 | Seq: 4 | Prio: RP | Size: 100 bytes
+Node 3 | Generated 44 bytes (Total Buffer: 236/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 99 bytes (Total Buffer: 411/4096B). Tag: CP
+[T=3.60221s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 4 | Size: 100 bytes
+[T=3.60221s] Coordinator Rx | Node: 10 | Seq: 4 | Size: 100 bytes
+[T=3.60221s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 4 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc04540)
+[T=3.60376s] Rx | LPU Received Packet 32 | Node: 2 | Seq: 7 | Size: 85 bytes | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc30f90)
+[T=3.60621s] Rx | LPU Received Packet 33 | Node: 2 | Seq: 8 | Size: 85 bytes | QoS Type: CP
+Node 2 | Generated 96 bytes (Total Buffer: 414/4096B). Tag: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc332d0)
+[T=3.60776s] Rx | LPU Received Packet 34 | Node: 3 | Seq: 4 | Size: 35 bytes | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daaa930)
+[T=3.60993s] Rx | LPU Received Packet 35 | Node: 5 | Seq: 7 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33a60)
+[T=3.61189s] Rx | LPU Received Packet 36 | Node: 5 | Seq: 8 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+[T=3.65926s] Tx | Node 11 | Seq: 4 | Prio: OP | Size: 64 bytes
+GCL schedule update requested
+[T=3.66314s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 4 | Size: 64 bytes
+[T=3.66314s] Coordinator Rx | Node: 11 | Seq: 4 | Size: 64 bytes
+[T=3.66314s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 4 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+[T=3.67462s] Tx | Node 4 | Seq: 4 | Prio: OP | Size: 16 bytes
+[T=3.6776s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 4 | Size: 16 bytes
+[T=3.6776s] Coordinator Rx | Node: 4 | Seq: 4 | Size: 16 bytes
+[T=3.6776s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 4 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc343c0)
+[T=3.67915s] Rx | LPU Received Packet 37 | Node: 10 | Seq: 4 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+Node 10 | Generated 97 bytes (Total Buffer: 497/4096B). Tag: OP
+[T=3.68998s] Tx | Node 9 | Seq: 4 | Prio: OP | Size: 64 bytes
+GCL schedule update requested
+[T=3.69322s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 4 | Size: 64 bytes
+[T=3.69322s] Coordinator Rx | Node: 9 | Seq: 4 | Size: 64 bytes
+[T=3.69322s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 4 | DSCP: 0 | QoS Type: OP
+Node 3 | Generated 44 bytes (Total Buffer: 280/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 508/4096B). Tag: RP
+Node 2 | Generated 95 bytes (Total Buffer: 509/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 59 bytes (Total Buffer: 125/2048B). Tag: OP
+Node 11 | Generated 62 bytes (Total Buffer: 125/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 592/4096B). Tag: CP
+GCL schedule update requested
+Node 3 | Generated 46 bytes (Total Buffer: 326/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 98 bytes (Total Buffer: 606/4096B). Tag: RP
+Node 2 | Generated 98 bytes (Total Buffer: 607/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 97 bytes (Total Buffer: 689/4096B). Tag: RP
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 373/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 96 bytes (Total Buffer: 702/4096B). Tag: RP
+Node 2 | Generated 97 bytes (Total Buffer: 704/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 8 | Generated 49 bytes (Total Buffer: 63/1024B). Tag: CP
+GCL schedule update requested
+GCL schedule update requested
+[T=3.94912s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+GCL schedule update requested
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.2304s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 6 | Generated 32 bytes (Total Buffer: 79/1024B). Tag: OP
+Node 10 | Generated 97 bytes (Total Buffer: 786/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 48 bytes (Total Buffer: 421/4096B). Tag: OP
+GCL schedule update requested
+Node 9 | Generated 63 bytes (Total Buffer: 188/2048B). Tag: OP
+Node 5 | Generated 95 bytes (Total Buffer: 797/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 803/4096B). Tag: RP
+[T=4.01382s] Tx | Node 2 | Seq: 9 | Prio: RP | Size: 100 bytes
+[T=4.01382s] Tx | Node 2 | Seq: 10 | Prio: RP | Size: 100 bytes
+Node 11 | Generated 48 bytes (Total Buffer: 173/2048B). Tag: OP
+Node 7 | Generated 16 bytes (Total Buffer: 47/1024B). Tag: OP
+[T=4.01853s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 9 | Size: 100 bytes
+[T=4.01853s] Coordinator Rx | Node: 2 | Seq: 9 | Size: 100 bytes
+[T=4.01853s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 9 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=4.02008s] Rx | LPU Received Packet 38 | Node: 2 | Seq: 9 | Size: 85 bytes | QoS Type: RP
+[T=4.02515s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 10 | Size: 100 bytes
+[T=4.02515s] Coordinator Rx | Node: 2 | Seq: 10 | Size: 100 bytes
+[T=4.02515s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 10 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+GCL schedule update requested
+[T=4.04454s] Tx | Node 3 | Seq: 5 | Prio: RP | Size: 50 bytes
+[T=4.04733s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 5 | Size: 50 bytes
+[T=4.04733s] Coordinator Rx | Node: 3 | Seq: 5 | Size: 50 bytes
+[T=4.04733s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 5 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa1760)
+[T=4.04859s] Rx | LPU Received Packet 39 | Node: 11 | Seq: 4 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da4e350)
+[T=4.05037s] Rx | LPU Received Packet 40 | Node: 4 | Seq: 4 | Size: 1 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc4dc90)
+[T=4.05211s] Rx | LPU Received Packet 41 | Node: 9 | Seq: 4 | Size: 49 bytes | QoS Type: OP
+[T=4.0599s] Tx | Node 5 | Seq: 9 | Prio: CP | Size: 100 bytes
+[T=4.0599s] Tx | Node 5 | Seq: 10 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+[T=4.06525s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 9 | Size: 100 bytes
+[T=4.06525s] Coordinator Rx | Node: 5 | Seq: 9 | Size: 100 bytes
+[T=4.06525s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 9 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+[T=4.07123s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 10 | Size: 100 bytes
+[T=4.07123s] Coordinator Rx | Node: 5 | Seq: 10 | Size: 100 bytes
+[T=4.07123s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 10 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da8aec0)
+[T=4.07279s] Rx | LPU Received Packet 42 | Node: 2 | Seq: 10 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da91430)
+[T=4.07461s] Rx | LPU Received Packet 43 | Node: 3 | Seq: 5 | Size: 35 bytes | QoS Type: RP
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: OP
+Node 10 | Generated 97 bytes (Total Buffer: 883/4096B). Tag: RP
+GCL schedule update requested
+[T=4.09062s] Tx | Node 10 | Seq: 5 | Prio: CP | Size: 100 bytes
+[T=4.09565s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 5 | Size: 100 bytes
+[T=4.09565s] Coordinator Rx | Node: 10 | Seq: 5 | Size: 100 bytes
+[T=4.09565s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 5 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33420)
+[T=4.0972s] Rx | LPU Received Packet 44 | Node: 5 | Seq: 9 | Size: 85 bytes | QoS Type: CP
+Node 3 | Generated 43 bytes (Total Buffer: 237/4096B). Tag: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da60fe0)
+[T=4.09919s] Rx | LPU Received Packet 45 | Node: 5 | Seq: 10 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6e1b0)
+[T=4.10128s] Rx | LPU Received Packet 46 | Node: 10 | Seq: 5 | Size: 85 bytes | QoS Type: CP
+Node 5 | Generated 99 bytes (Total Buffer: 414/4096B). Tag: RP
+[T=4.10598s] Tx | Node 6 | Seq: 2 | Prio: OP | Size: 32 bytes
+[T=4.10787s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 6 | Seq: 2 | Size: 32 bytes
+[T=4.10787s] Coordinator Rx | Node: 6 | Seq: 2 | Size: 32 bytes
+[T=4.10787s] Tx | Coordinator -> LPU | Fwd Node: 6 | Seq: 2 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+Node 2 | Generated 98 bytes (Total Buffer: 413/4096B). Tag: CP
+GCL schedule update requested
+[T=4.12134s] Tx | Node 7 | Seq: 2 | Prio: OP | Size: 16 bytes
+[T=4.12432s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 7 | Seq: 2 | Size: 16 bytes
+[T=4.12432s] Coordinator Rx | Node: 7 | Seq: 2 | Size: 16 bytes
+[T=4.12432s] Tx | Coordinator -> LPU | Fwd Node: 7 | Seq: 2 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+[T=4.1367s] Tx | Node 8 | Seq: 3 | Prio: CP | Size: 50 bytes
+[T=4.13981s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 8 | Seq: 3 | Size: 50 bytes
+[T=4.13981s] Coordinator Rx | Node: 8 | Seq: 3 | Size: 50 bytes
+[T=4.13981s] Tx | Coordinator -> LPU | Fwd Node: 8 | Seq: 3 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc22520)
+[T=4.14082s] Rx | LPU Received Packet 47 | Node: 6 | Seq: 2 | Size: 17 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34bd0)
+[T=4.14205s] Rx | LPU Received Packet 48 | Node: 7 | Seq: 2 | Size: 1 bytes | QoS Type: OP
+GCL schedule update requested
+[T=4.15206s] Tx | Node 11 | Seq: 5 | Prio: OP | Size: 64 bytes
+[T=4.15658s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 5 | Size: 64 bytes
+[T=4.15658s] Coordinator Rx | Node: 11 | Seq: 5 | Size: 64 bytes
+[T=4.15658s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 5 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc4dc90)
+[T=4.15784s] Rx | LPU Received Packet 49 | Node: 11 | Seq: 5 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+[T=4.16742s] Tx | Node 4 | Seq: 5 | Prio: RP | Size: 16 bytes
+GCL schedule update requested
+[T=4.17104s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 5 | Size: 16 bytes
+[T=4.17104s] Coordinator Rx | Node: 4 | Seq: 5 | Size: 16 bytes
+[T=4.17104s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 5 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da4ad60)
+[T=4.17192s] Rx | LPU Received Packet 50 | Node: 4 | Seq: 5 | Size: 1 bytes | QoS Type: RP
+GCL schedule update requested
+[T=4.18278s] Tx | Node 9 | Seq: 5 | Prio: OP | Size: 64 bytes
+[T=4.1857s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 5 | Size: 64 bytes
+[T=4.1857s] Coordinator Rx | Node: 9 | Seq: 5 | Size: 64 bytes
+[T=4.1857s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 5 | DSCP: 0 | QoS Type: OP
+Node 10 | Generated 97 bytes (Total Buffer: 495/4096B). Tag: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da834c0)
+[T=4.18685s] Rx | LPU Received Packet 51 | Node: 8 | Seq: 3 | Size: 35 bytes | QoS Type: CP
+GCL schedule update requested
+Node 3 | Generated 49 bytes (Total Buffer: 286/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 98 bytes (Total Buffer: 512/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 95 bytes (Total Buffer: 508/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 62 bytes (Total Buffer: 135/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 11 | Generated 59 bytes (Total Buffer: 120/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 590/4096B). Tag: RP
+GCL schedule update requested
+Node 3 | Generated 44 bytes (Total Buffer: 330/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 99 bytes (Total Buffer: 611/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 607/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 96 bytes (Total Buffer: 686/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 377/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 708/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 706/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+[T=4.44064s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.2304s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 96 bytes (Total Buffer: 782/4096B). Tag: RP
+GCL schedule update requested
+Node 3 | Generated 46 bytes (Total Buffer: 423/4096B). Tag: OP
+Node 9 | Generated 61 bytes (Total Buffer: 196/2048B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 805/4096B). Tag: OP
+[T=4.50406s] Tx | Node 2 | Seq: 11 | Prio: CP | Size: 100 bytes
+[T=4.50406s] Tx | Node 2 | Seq: 12 | Prio: CP | Size: 100 bytes
+[T=4.50813s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 11 | Size: 100 bytes
+[T=4.50813s] Coordinator Rx | Node: 2 | Seq: 11 | Size: 100 bytes
+[T=4.50813s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 11 | DSCP: 48 | QoS Type: CP
+Node 11 | Generated 49 bytes (Total Buffer: 169/2048B). Tag: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daaa930)
+[T=4.50939s] Rx | LPU Received Packet 52 | Node: 9 | Seq: 5 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+Node 2 | Generated 95 bytes (Total Buffer: 316/4096B). Tag: OP
+[T=4.51347s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 12 | Size: 100 bytes
+[T=4.51347s] Coordinator Rx | Node: 2 | Seq: 12 | Size: 100 bytes
+[T=4.51347s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 12 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+GCL schedule update requested
+[T=4.53478s] Tx | Node 3 | Seq: 6 | Prio: RP | Size: 50 bytes
+[T=4.53917s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 6 | Size: 50 bytes
+[T=4.53917s] Coordinator Rx | Node: 3 | Seq: 6 | Size: 50 bytes
+[T=4.53917s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 6 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da4ad60)
+[T=4.54032s] Rx | LPU Received Packet 53 | Node: 3 | Seq: 6 | Size: 35 bytes | QoS Type: RP
+GCL schedule update requested
+[T=4.55014s] Tx | Node 5 | Seq: 11 | Prio: RP | Size: 100 bytes
+[T=4.55014s] Tx | Node 5 | Seq: 12 | Prio: RP | Size: 100 bytes
+[T=4.55485s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 11 | Size: 100 bytes
+[T=4.55485s] Coordinator Rx | Node: 5 | Seq: 11 | Size: 100 bytes
+[T=4.55485s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 11 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da72340)
+[T=4.5564s] Rx | LPU Received Packet 54 | Node: 2 | Seq: 11 | Size: 85 bytes | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa6510)
+[T=4.55843s] Rx | LPU Received Packet 55 | Node: 2 | Seq: 12 | Size: 85 bytes | QoS Type: CP
+[T=4.55955s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 12 | Size: 100 bytes
+[T=4.55955s] Coordinator Rx | Node: 5 | Seq: 12 | Size: 100 bytes
+[T=4.55955s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 12 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc34270)
+[T=4.56111s] Rx | LPU Received Packet 56 | Node: 5 | Seq: 11 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa1760)
+[T=4.56355s] Rx | LPU Received Packet 57 | Node: 5 | Seq: 12 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+GCL schedule update requested
+[T=4.58086s] Tx | Node 10 | Seq: 6 | Prio: RP | Size: 100 bytes
+Node 10 | Generated 96 bytes (Total Buffer: 395/4096B). Tag: OP
+[T=4.58589s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 6 | Size: 100 bytes
+[T=4.58589s] Coordinator Rx | Node: 10 | Seq: 6 | Size: 100 bytes
+[T=4.58589s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 6 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc4dc90)
+[T=4.58744s] Rx | LPU Received Packet 58 | Node: 10 | Seq: 6 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+Node 3 | Generated 42 bytes (Total Buffer: 236/4096B). Tag: RP
+Node 5 | Generated 97 bytes (Total Buffer: 417/4096B). Tag: OP
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 96 bytes (Total Buffer: 412/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+[T=4.6423s] Tx | Node 11 | Seq: 6 | Prio: OP | Size: 64 bytes
+[T=4.64618s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 6 | Size: 64 bytes
+[T=4.64618s] Coordinator Rx | Node: 11 | Seq: 6 | Size: 64 bytes
+[T=4.64618s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 6 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+[T=4.65766s] Tx | Node 4 | Seq: 6 | Prio: RP | Size: 16 bytes
+GCL schedule update requested
+[T=4.66128s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 6 | Size: 16 bytes
+[T=4.66128s] Coordinator Rx | Node: 4 | Seq: 6 | Size: 16 bytes
+[T=4.66128s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 6 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6fa80)
+[T=4.66255s] Rx | LPU Received Packet 59 | Node: 11 | Seq: 6 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+[T=4.67302s] Tx | Node 9 | Seq: 6 | Prio: OP | Size: 64 bytes
+[T=4.67626s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 6 | Size: 64 bytes
+[T=4.67626s] Coordinator Rx | Node: 9 | Seq: 6 | Size: 64 bytes
+[T=4.67626s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 6 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc30f90)
+[T=4.67714s] Rx | LPU Received Packet 60 | Node: 4 | Seq: 6 | Size: 1 bytes | QoS Type: RP
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 490/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 44 bytes (Total Buffer: 280/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 514/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 511/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 54 bytes (Total Buffer: 128/2048B). Tag: OP
+Node 11 | Generated 55 bytes (Total Buffer: 114/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 585/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 48 bytes (Total Buffer: 328/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 99 bytes (Total Buffer: 613/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 96 bytes (Total Buffer: 607/4096B). Tag: RP
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 97 bytes (Total Buffer: 682/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 44 bytes (Total Buffer: 372/4096B). Tag: OP
+Node 5 | Generated 95 bytes (Total Buffer: 708/4096B). Tag: CP
+GCL schedule update requested
+GCL schedule update requested
+Node 2 | Generated 95 bytes (Total Buffer: 702/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+[T=4.93216s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.12288s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.0768s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+GCL schedule update requested
+GCL schedule update requested
+Node 6 | Generated 32 bytes (Total Buffer: 47/1024B). Tag: RP
+GCL schedule update requested
+Node 8 | Generated 49 bytes (Total Buffer: 63/1024B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 99 bytes (Total Buffer: 781/4096B). Tag: RP
+GCL schedule update requested
+Node 3 | Generated 45 bytes (Total Buffer: 417/4096B). Tag: OP
+Node 9 | Generated 52 bytes (Total Buffer: 180/2048B). Tag: OP
+[T=4.99526s] Tx | Node 2 | Seq: 13 | Prio: RP | Size: 100 bytes
+[T=4.99526s] Tx | Node 2 | Seq: 14 | Prio: RP | Size: 100 bytes
+Node 5 | Generated 98 bytes (Total Buffer: 806/4096B). Tag: OP
+[T=4.99933s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 13 | Size: 100 bytes
+[T=4.99933s] Coordinator Rx | Node: 2 | Seq: 13 | Size: 100 bytes
+[T=4.99933s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 13 | DSCP: 32 | QoS Type: RP
+Node 7 | Generated 16 bytes (Total Buffer: 31/1024B). Tag: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6fa80)
+[T=5.00088s] Rx | LPU Received Packet 61 | Node: 2 | Seq: 13 | Size: 85 bytes | QoS Type: RP
+Node 11 | Generated 54 bytes (Total Buffer: 168/2048B). Tag: OP
+[T=5.00563s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 14 | Size: 100 bytes
+[T=5.00563s] Coordinator Rx | Node: 2 | Seq: 14 | Size: 100 bytes
+[T=5.00563s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 14 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+[T=5.01062s] Tx | Node 3 | Seq: 7 | Prio: RP | Size: 50 bytes
+Node 2 | Generated 95 bytes (Total Buffer: 406/4096B). Tag: RP
+[T=5.01437s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 7 | Size: 50 bytes
+[T=5.01437s] Coordinator Rx | Node: 3 | Seq: 7 | Size: 50 bytes
+[T=5.01437s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 7 | DSCP: 32 | QoS Type: RP
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: RP
+GCL schedule update requested
+[T=5.02598s] Tx | Node 5 | Seq: 13 | Prio: CP | Size: 100 bytes
+[T=5.02598s] Tx | Node 5 | Seq: 14 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+[T=5.03133s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 13 | Size: 100 bytes
+[T=5.03133s] Coordinator Rx | Node: 5 | Seq: 13 | Size: 100 bytes
+[T=5.03133s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 13 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33a60)
+[T=5.03288s] Rx | LPU Received Packet 62 | Node: 5 | Seq: 13 | Size: 85 bytes | QoS Type: CP
+[T=5.03795s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 14 | Size: 100 bytes
+[T=5.03795s] Coordinator Rx | Node: 5 | Seq: 14 | Size: 100 bytes
+[T=5.03795s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 14 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da834c0)
+[T=5.03922s] Rx | LPU Received Packet 63 | Node: 9 | Seq: 6 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+GCL schedule update requested
+[T=5.0567s] Tx | Node 10 | Seq: 7 | Prio: RP | Size: 100 bytes
+GCL schedule update requested
+[T=5.06141s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 7 | Size: 100 bytes
+[T=5.06141s] Coordinator Rx | Node: 10 | Seq: 7 | Size: 100 bytes
+[T=5.06141s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 7 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da91430)
+[T=5.06296s] Rx | LPU Received Packet 64 | Node: 2 | Seq: 14 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc4e170)
+[T=5.06451s] Rx | LPU Received Packet 65 | Node: 3 | Seq: 7 | Size: 35 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa20f0)
+[T=5.06678s] Rx | LPU Received Packet 66 | Node: 10 | Seq: 7 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+[T=5.07206s] Tx | Node 6 | Seq: 3 | Prio: RP | Size: 32 bytes
+[T=5.07555s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 6 | Seq: 3 | Size: 32 bytes
+[T=5.07555s] Coordinator Rx | Node: 6 | Seq: 3 | Size: 32 bytes
+[T=5.07555s] Tx | Coordinator -> LPU | Fwd Node: 6 | Seq: 3 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+Node 10 | Generated 96 bytes (Total Buffer: 493/4096B). Tag: OP
+[T=5.08742s] Tx | Node 7 | Seq: 3 | Prio: RP | Size: 16 bytes
+GCL schedule update requested
+[T=5.0904s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 7 | Seq: 3 | Size: 16 bytes
+[T=5.0904s] Coordinator Rx | Node: 7 | Seq: 3 | Size: 16 bytes
+[T=5.0904s] Tx | Coordinator -> LPU | Fwd Node: 7 | Seq: 3 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc23160)
+[T=5.09141s] Rx | LPU Received Packet 67 | Node: 6 | Seq: 3 | Size: 17 bytes | QoS Type: RP
+Node 3 | Generated 46 bytes (Total Buffer: 234/4096B). Tag: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc04540)
+[T=5.09265s] Rx | LPU Received Packet 68 | Node: 7 | Seq: 3 | Size: 1 bytes | QoS Type: RP
+Node 5 | Generated 97 bytes (Total Buffer: 413/4096B). Tag: OP
+GCL schedule update requested
+[T=5.10278s] Tx | Node 8 | Seq: 4 | Prio: RP | Size: 50 bytes
+[T=5.10685s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 8 | Seq: 4 | Size: 50 bytes
+[T=5.10685s] Coordinator Rx | Node: 8 | Seq: 4 | Size: 50 bytes
+[T=5.10685s] Tx | Coordinator -> LPU | Fwd Node: 8 | Seq: 4 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc30f90)
+[T=5.108s] Rx | LPU Received Packet 69 | Node: 8 | Seq: 4 | Size: 35 bytes | QoS Type: RP
+GCL schedule update requested
+Node 2 | Generated 98 bytes (Total Buffer: 504/4096B). Tag: OP
+[T=5.11814s] Tx | Node 11 | Seq: 7 | Prio: OP | Size: 64 bytes
+GCL schedule update requested
+[T=5.12106s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 7 | Size: 64 bytes
+[T=5.12106s] Coordinator Rx | Node: 11 | Seq: 7 | Size: 64 bytes
+[T=5.12106s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 7 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6fa80)
+[T=5.12261s] Rx | LPU Received Packet 70 | Node: 5 | Seq: 14 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+[T=5.1335s] Tx | Node 4 | Seq: 7 | Prio: RP | Size: 16 bytes
+[T=5.13552s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 7 | Size: 16 bytes
+[T=5.13552s] Coordinator Rx | Node: 4 | Seq: 7 | Size: 16 bytes
+[T=5.13552s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 7 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da4e350)
+[T=5.1364s] Rx | LPU Received Packet 71 | Node: 4 | Seq: 7 | Size: 1 bytes | QoS Type: RP
+GCL schedule update requested
+[T=5.14886s] Tx | Node 9 | Seq: 7 | Prio: OP | Size: 64 bytes
+GCL schedule update requested
+[T=5.1521s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 7 | Size: 64 bytes
+[T=5.1521s] Coordinator Rx | Node: 9 | Seq: 7 | Size: 64 bytes
+[T=5.1521s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 7 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 99 bytes (Total Buffer: 592/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 44 bytes (Total Buffer: 278/4096B). Tag: RP
+Node 5 | Generated 98 bytes (Total Buffer: 511/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 2 | Generated 96 bytes (Total Buffer: 600/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 62 bytes (Total Buffer: 119/2048B). Tag: OP
+Node 11 | Generated 57 bytes (Total Buffer: 117/2048B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 98 bytes (Total Buffer: 690/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 42 bytes (Total Buffer: 320/4096B). Tag: RP
+Node 5 | Generated 97 bytes (Total Buffer: 608/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: OP
+Node 2 | Generated 96 bytes (Total Buffer: 696/4096B). Tag: CP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 99 bytes (Total Buffer: 789/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 49 bytes (Total Buffer: 369/4096B). Tag: CP
+Node 5 | Generated 98 bytes (Total Buffer: 706/4096B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 795/4096B). Tag: OP
+GCL schedule update requested
+[T=5.42368s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.2304s
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 98 bytes (Total Buffer: 887/4096B). Tag: RP
+[T=5.48646s] Tx | Node 2 | Seq: 15 | Prio: CP | Size: 100 bytes
+[T=5.48646s] Tx | Node 2 | Seq: 16 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+[T=5.49213s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 15 | Size: 100 bytes
+[T=5.49213s] Coordinator Rx | Node: 2 | Seq: 15 | Size: 100 bytes
+[T=5.49213s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 15 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa20f0)
+[T=5.49368s] Rx | LPU Received Packet 72 | Node: 2 | Seq: 15 | Size: 85 bytes | QoS Type: CP
+Node 3 | Generated 48 bytes (Total Buffer: 417/4096B). Tag: OP
+[T=5.49747s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 16 | Size: 100 bytes
+[T=5.49747s] Coordinator Rx | Node: 2 | Seq: 16 | Size: 100 bytes
+[T=5.49747s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 16 | DSCP: 48 | QoS Type: CP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc33420)
+[T=5.49874s] Rx | LPU Received Packet 73 | Node: 11 | Seq: 7 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc332d0)
+[T=5.50062s] Rx | LPU Received Packet 74 | Node: 9 | Seq: 7 | Size: 49 bytes | QoS Type: OP
+Node 5 | Generated 95 bytes (Total Buffer: 801/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 99 bytes (Total Buffer: 413/4096B). Tag: RP
+Node 9 | Generated 62 bytes (Total Buffer: 181/2048B). Tag: OP
+[T=5.51718s] Tx | Node 3 | Seq: 8 | Prio: CP | Size: 50 bytes
+Node 11 | Generated 63 bytes (Total Buffer: 180/2048B). Tag: OP
+GCL schedule update requested
+[T=5.52061s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 8 | Size: 50 bytes
+[T=5.52061s] Coordinator Rx | Node: 3 | Seq: 8 | Size: 50 bytes
+[T=5.52061s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 8 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+[T=5.53254s] Tx | Node 5 | Seq: 15 | Prio: OP | Size: 100 bytes
+[T=5.53254s] Tx | Node 5 | Seq: 16 | Prio: OP | Size: 100 bytes
+[T=5.53693s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 15 | Size: 100 bytes
+[T=5.53693s] Coordinator Rx | Node: 5 | Seq: 15 | Size: 100 bytes
+[T=5.53693s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 15 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da6fa80)
+[T=5.53848s] Rx | LPU Received Packet 75 | Node: 2 | Seq: 16 | Size: 85 bytes | QoS Type: CP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da72340)
+[T=5.54033s] Rx | LPU Received Packet 76 | Node: 3 | Seq: 8 | Size: 35 bytes | QoS Type: CP
+[T=5.54227s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 16 | Size: 100 bytes
+[T=5.54227s] Coordinator Rx | Node: 5 | Seq: 16 | Size: 100 bytes
+[T=5.54227s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 16 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc35d40)
+[T=5.54383s] Rx | LPU Received Packet 77 | Node: 5 | Seq: 15 | Size: 85 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc20630)
+[T=5.54615s] Rx | LPU Received Packet 78 | Node: 5 | Seq: 16 | Size: 85 bytes | QoS Type: OP
+GCL schedule update requested
+GCL schedule update requested
+[T=5.56326s] Tx | Node 10 | Seq: 8 | Prio: RP | Size: 100 bytes
+[T=5.56765s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 8 | Size: 100 bytes
+[T=5.56765s] Coordinator Rx | Node: 10 | Seq: 8 | Size: 100 bytes
+[T=5.56765s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 8 | DSCP: 32 | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da82df0)
+[T=5.5692s] Rx | LPU Received Packet 79 | Node: 10 | Seq: 8 | Size: 85 bytes | QoS Type: RP
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 500/4096B). Tag: CP
+GCL schedule update requested
+Node 3 | Generated 42 bytes (Total Buffer: 236/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 412/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 97 bytes (Total Buffer: 510/4096B). Tag: OP
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: OP
+GCL schedule update requested
+[T=5.6247s] Tx | Node 4 | Seq: 8 | Prio: OP | Size: 16 bytes
+[T=5.62768s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 4 | Seq: 8 | Size: 16 bytes
+[T=5.62768s] Coordinator Rx | Node: 4 | Seq: 8 | Size: 16 bytes
+[T=5.62768s] Tx | Coordinator -> LPU | Fwd Node: 4 | Seq: 8 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+GCL schedule update requested
+[T=5.64006s] Tx | Node 9 | Seq: 8 | Prio: OP | Size: 64 bytes
+[T=5.6449s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 9 | Seq: 8 | Size: 64 bytes
+[T=5.6449s] Coordinator Rx | Node: 9 | Seq: 8 | Size: 64 bytes
+[T=5.6449s] Tx | Coordinator -> LPU | Fwd Node: 9 | Seq: 8 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+[T=5.65542s] Tx | Node 11 | Seq: 8 | Prio: OP | Size: 64 bytes
+[T=5.65866s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 11 | Seq: 8 | Size: 64 bytes
+[T=5.65866s] Coordinator Rx | Node: 11 | Seq: 8 | Size: 64 bytes
+[T=5.65866s] Tx | Coordinator -> LPU | Fwd Node: 11 | Seq: 8 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23daa6510)
+[T=5.65954s] Rx | LPU Received Packet 80 | Node: 4 | Seq: 8 | Size: 1 bytes | QoS Type: OP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc23160)
+[T=5.6612s] Rx | LPU Received Packet 81 | Node: 9 | Seq: 8 | Size: 49 bytes | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da72340)
+[T=5.66282s] Rx | LPU Received Packet 82 | Node: 11 | Seq: 8 | Size: 49 bytes | QoS Type: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 98 bytes (Total Buffer: 598/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 43 bytes (Total Buffer: 279/4096B). Tag: RP
+GCL schedule update requested
+Node 5 | Generated 98 bytes (Total Buffer: 510/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 95 bytes (Total Buffer: 605/4096B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 9 | Generated 61 bytes (Total Buffer: 136/2048B). Tag: OP
+Node 11 | Generated 58 bytes (Total Buffer: 129/2048B). Tag: CP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 95 bytes (Total Buffer: 693/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 326/4096B). Tag: CP
+GCL schedule update requested
+Node 5 | Generated 98 bytes (Total Buffer: 608/4096B). Tag: RP
+GCL schedule update requested
+Node 2 | Generated 97 bytes (Total Buffer: 702/4096B). Tag: RP
+Node 4 | Generated 16 bytes (Total Buffer: 47/2048B). Tag: RP
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 6 | Generated 32 bytes (Total Buffer: 47/1024B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+Node 10 | Generated 98 bytes (Total Buffer: 791/4096B). Tag: OP
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 373/4096B). Tag: OP
+GCL schedule update requested
+Node 5 | Generated 97 bytes (Total Buffer: 705/4096B). Tag: OP
+GCL schedule update requested
+Node 2 | Generated 97 bytes (Total Buffer: 799/4096B). Tag: OP
+[T=5.9152s] Hub | Computing MAP TDMA Schedule & Broadcasting Sync...
+Node 7 | Sync Rx -> GRANTED TDMA offset: 0.16896s
+Node 10 | Sync Rx -> GRANTED TDMA offset: 0.13824s
+Node 6 | Sync Rx -> GRANTED TDMA offset: 0.1536s
+Node 8 | Sync Rx -> GRANTED TDMA offset: 0.18432s
+Node 4 | Sync Rx -> GRANTED TDMA offset: 0.19968s
+Node 9 | Sync Rx -> GRANTED TDMA offset: 0.21504s
+Node 2 | Sync Rx -> GRANTED TDMA offset: 0.06144s
+Node 3 | Sync Rx -> GRANTED TDMA offset: 0.09216s
+Node 5 | Sync Rx -> GRANTED TDMA offset: 0.10752s
+Node 11 | Sync Rx -> GRANTED TDMA offset: 0.2304s
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+GCL schedule update requested
+Node 8 | Generated 49 bytes (Total Buffer: 63/1024B). Tag: OP
+GCL schedule update requested
+GCL schedule update requested
+[T=5.9783s] Tx | Node 2 | Seq: 17 | Prio: RP | Size: 100 bytes
+[T=5.9783s] Tx | Node 2 | Seq: 18 | Prio: RP | Size: 100 bytes
+Node 7 | Generated 16 bytes (Total Buffer: 31/1024B). Tag: OP
+GCL schedule update requested
+[T=5.98365s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 17 | Size: 100 bytes
+[T=5.98365s] Coordinator Rx | Node: 2 | Seq: 17 | Size: 100 bytes
+[T=5.98365s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 17 | DSCP: 32 | QoS Type: RP
+Node 10 | Generated 97 bytes (Total Buffer: 888/4096B). Tag: RP
+[T=5.98995s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 2 | Seq: 18 | Size: 100 bytes
+[T=5.98995s] Coordinator Rx | Node: 2 | Seq: 18 | Size: 100 bytes
+[T=5.98995s] Tx | Coordinator -> LPU | Fwd Node: 2 | Seq: 18 | DSCP: 32 | QoS Type: RP
+GCL schedule update requested
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23dc4d8e0)
+[T=5.99151s] Rx | LPU Received Packet 83 | Node: 2 | Seq: 17 | Size: 85 bytes | QoS Type: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da82df0)
+[T=5.99351s] Rx | LPU Received Packet 84 | Node: 2 | Seq: 18 | Size: 85 bytes | QoS Type: RP
+Node 3 | Generated 42 bytes (Total Buffer: 415/4096B). Tag: CP
+Node 9 | Generated 52 bytes (Total Buffer: 188/2048B). Tag: RP
+GCL schedule update requested
+Node 11 | Generated 48 bytes (Total Buffer: 177/2048B). Tag: OP
+Node 5 | Generated 96 bytes (Total Buffer: 801/4096B). Tag: CP
+[T=6.00902s] Tx | Node 3 | Seq: 9 | Prio: CP | Size: 50 bytes
+GCL schedule update requested
+[T=6.01245s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 3 | Seq: 9 | Size: 50 bytes
+[T=6.01245s] Coordinator Rx | Node: 3 | Seq: 9 | Size: 50 bytes
+[T=6.01245s] Tx | Coordinator -> LPU | Fwd Node: 3 | Seq: 9 | DSCP: 48 | QoS Type: CP
+Node 2 | Generated 99 bytes (Total Buffer: 414/4096B). Tag: RP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da82df0)
+[T=6.0136s] Rx | LPU Received Packet 85 | Node: 3 | Seq: 9 | Size: 35 bytes | QoS Type: CP
+GCL schedule update requested
+[T=6.02438s] Tx | Node 5 | Seq: 17 | Prio: CP | Size: 100 bytes
+[T=6.02438s] Tx | Node 5 | Seq: 18 | Prio: CP | Size: 100 bytes
+[T=6.02941s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 17 | Size: 100 bytes
+[T=6.02941s] Coordinator Rx | Node: 5 | Seq: 17 | Size: 100 bytes
+[T=6.02941s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 17 | DSCP: 48 | QoS Type: CP
+Node 4 | Generated 16 bytes (Total Buffer: 63/2048B). Tag: OP
+GCL schedule update requested
+[T=6.03475s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 5 | Seq: 18 | Size: 100 bytes
+[T=6.03475s] Coordinator Rx | Node: 5 | Seq: 18 | Size: 100 bytes
+[T=6.03475s] Tx | Coordinator -> LPU | Fwd Node: 5 | Seq: 18 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+GCL schedule update requested
+[T=6.0551s] Tx | Node 10 | Seq: 9 | Prio: CP | Size: 100 bytes
+GCL schedule update requested
+[T=6.06109s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 10 | Seq: 9 | Size: 100 bytes
+[T=6.06109s] Coordinator Rx | Node: 10 | Seq: 9 | Size: 100 bytes
+[T=6.06109s] Tx | Coordinator -> LPU | Fwd Node: 10 | Seq: 9 | DSCP: 48 | QoS Type: CP
+GCL schedule update requested
+[T=6.07046s] Tx | Node 6 | Seq: 4 | Prio: OP | Size: 32 bytes
+[T=6.07235s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 6 | Seq: 4 | Size: 32 bytes
+[T=6.07235s] Coordinator Rx | Node: 6 | Seq: 4 | Size: 32 bytes
+[T=6.07235s] Tx | Coordinator -> LPU | Fwd Node: 6 | Seq: 4 | DSCP: 0 | QoS Type: OP
+LpuApp:HandleRead(0x5ae23dc31e20, 0x5ae23dc217a0)
+LpuApp:ProcessPayload(0x5ae23dc31e20, 0x5ae23da60fe0)
+[T=6.07336s] Rx | LPU Received Packet 86 | Node: 6 | Seq: 4 | Size: 17 bytes | QoS Type: OP
+GCL schedule update requested
+[T=6.08582s] Tx | Node 7 | Seq: 4 | Prio: OP | Size: 16 bytes
+Node 10 | Generated 97 bytes (Total Buffer: 495/4096B). Tag: OP
+[T=6.08848s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 7 | Seq: 4 | Size: 16 bytes
+[T=6.08848s] Coordinator Rx | Node: 7 | Seq: 4 | Size: 16 bytes
+[T=6.08848s] Tx | Coordinator -> LPU | Fwd Node: 7 | Seq: 4 | DSCP: 0 | QoS Type: OP
+GCL schedule update requested
+Node 3 | Generated 47 bytes (Total Buffer: 233/4096B). Tag: OP
+GCL schedule update requested
+[T=6.10118s] Tx | Node 8 | Seq: 5 | Prio: OP | Size: 50 bytes
+[T=6.10557s] Rx | Node 0 (Coordinator) received 802.15.4 frame | Node: 8 | Seq: 5 | Size: 50 bytes
+[T=6.10557s] Coordinator Rx | Node: 8 | Seq: 5 | Size: 50 bytes
+[T=6.10557s] Tx | Coordinator -> LPU | Fwd Node: 8 | Seq: 5 | DSCP: 0 | QoS Type: OP
+Node 5 | Generated 99 bytes (Total Buffer: 415/4096B). Tag: RP
+Process was interrupted by the user

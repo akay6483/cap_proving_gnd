@@ -1,5 +1,7 @@
 #include "wban-telemetry.h"
 #include "ns3/simulator.h"
+#include <cstdlib>      // NEW: Required for system()
+#include <sys/stat.h>   // NEW: Required for directory operations
 
 namespace ns3 {
 namespace wban {
@@ -61,6 +63,15 @@ Ptr<GclQueueDisc> WbanTelemetry::m_gclDisc = nullptr;
 Time WbanTelemetry::m_pollInterval = Seconds(0);
 
 void WbanTelemetry::Initialize(const std::string& prefix) {
+    // NEW: Safely create the target data-analysis/csv directory if it doesn't exist
+    size_t lastSlash = prefix.find_last_of('/');
+    if (lastSlash != std::string::npos) {
+        std::string dirPath = prefix.substr(0, lastSlash);
+        std::string cmd = "mkdir -p " + dirPath;
+        int res = system(cmd.c_str());
+        (void)res; // Suppress unused result warning
+    }
+
     m_txCsv.open(prefix + "_tx.csv");
     m_txCsv << "Time_s,NodeID,SeqNum,Priority,Size_bytes\n";
 
